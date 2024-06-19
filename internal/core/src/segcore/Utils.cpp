@@ -15,9 +15,12 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <string_view>
+#include <stdexcept>
 
 #include "index/ScalarIndex.h"
 #include "log/Log.h"
+#include "storage/CollectionChunkManager.h"
 #include "storage/FieldData.h"
 #include "storage/RemoteChunkManagerSingleton.h"
 #include "storage/ThreadPools.h"
@@ -678,27 +681,68 @@ ReverseDataFromIndex(const index::IndexBase* index,
 
     return data_array;
 }
+
+std::string_view
+GetPartByIndex(const std::string_view str, char delimiter, int index) {
+    size_t start = 0;
+    size_t end = str.find(delimiter);
+
+    for (int i = 0; i <= index; ++i) {
+        if (end == std::string_view::npos) {
+            if (i == index) {
+                return str.substr(start);
+            } else {
+                throw std::out_of_range("Index out of range");
+            }
+        } else {
+            if (i == index) {
+                return str.substr(start, end - start);
+            } else {
+                start = end + 1;
+                end = str.find(delimiter, start);
+            }
+        }
+    }
+
+    throw std::out_of_range("Index out of range");
+}
+
 // init segcore storage config first, and create default remote chunk manager
 // segcore use default remote chunk manager to load data from minio/s3
 void
 LoadFieldDatasFromRemote(const std::vector<std::string>& remote_files,
                          storage::FieldDataChannelPtr channel) {
     try {
-        auto rcm = storage::RemoteChunkManagerSingleton::GetInstance()
-                       .GetRemoteChunkManager();
+
         auto& pool = ThreadPools::GetThreadPool(ThreadPoolPriority::HIGH);
 
         std::vector<std::future<storage::FieldDataPtr>> futures;
         futures.reserve(remote_files.size());
+
         for (const auto& file : remote_files) {
-            auto future = pool.Submit([&]() {
-                auto fileSize = rcm->Size(file);
-                auto buf = std::shared_ptr<uint8_t[]>(new uint8_t[fileSize]);
-                rcm->Read(file, buf.get(), fileSize);
-                auto result = storage::DeserializeFileData(buf, fileSize);
-                return result->GetFieldData();
-            });
-            futures.emplace_back(std::move(future));
+            try {
+                std::string_view collection_id_str = GetPartByIndex(file, '/', 2);
+                int64_t collection_id = std::stoll(std::string(collection_id_str));
+
+                auto future = pool.Submit([&, collection_id]() {
+                    auto rcm = milvus::storage::CollectionChunkManager::GetChunkManager(
+                        collection_id,
+                        std::getenv("MILVUS_INSTANCE_NAME"),
+                        true);
+                    auto fileSize = rcm->Size(file);
+                    auto buf = std::shared_ptr<uint8_t[]>(new uint8_t[fileSize]);
+                    rcm->Read(file, buf.get(), fileSize);
+                    auto result = storage::DeserializeFileData(buf, fileSize);
+                    return result->GetFieldData();
+                });
+                futures.emplace_back(std::move(future));
+            } catch (const std::out_of_range& e) {
+                LOG_SEGCORE_ERROR_ << "Error: " << e.what() << " for file: " << file;
+            } catch (const std::invalid_argument& e) {
+                LOG_SEGCORE_ERROR_ << "Error: Invalid collection ID in file: " << file;
+            } catch (const std::exception& e) {
+                LOG_SEGCORE_ERROR_ << "Unexpected error: " << e.what();
+            }
         }
 
         for (auto& future : futures) {

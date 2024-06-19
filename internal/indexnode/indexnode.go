@@ -119,7 +119,7 @@ func NewIndexNode(ctx context.Context, factory dependency.Factory) *IndexNode {
 		loopCtx:        ctx1,
 		loopCancel:     cancel,
 		factory:        factory,
-		storageFactory: NewChunkMgrFactory(),
+		storageFactory: &FabricChunkMgrFactory{},
 		tasks:          map[taskKey]*taskInfo{},
 		lifetime:       lifetime.NewLifetime(commonpb.StateCode_Abnormal),
 	}
