@@ -239,6 +239,8 @@ type commonConfig struct {
 
 	// Salesforce Data Cloud Milvus BYOK
 	ByokEnabled ParamItem `refreshable:"false"`
+
+	UseCollectionIdBasedIndexPath ParamItem `refreshable:"false"`
 }
 
 func (p *commonConfig) init(base *BaseTable) {
@@ -703,6 +705,14 @@ like the old password verification when updating the credential`,
 		Doc:          "Whether to enable BYOK",
 	}
 	p.ByokEnabled.Init(base.mgr)
+
+	p.UseCollectionIdBasedIndexPath = ParamItem{
+		Key:          "common.storage.useCollectionIdBasedIndexPath",
+		Version:      "2.3.19",
+		DefaultValue: "false",
+	}
+	p.UseCollectionIdBasedIndexPath.Init(base.mgr)
+
 }
 
 type traceConfig struct {

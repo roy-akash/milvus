@@ -300,6 +300,7 @@ func (ib *indexBuilder) process(buildID UniqueID) bool {
 				CloudProvider:    Params.MinioCfg.CloudProvider.GetValue(),
 				RequestTimeoutMs: Params.MinioCfg.RequestTimeoutMs.GetAsInt64(),
 				ByokEnabled:      Params.CommonCfg.ByokEnabled.GetAsBool(),
+				UseCollectionIdIndexPath: Params.CommonCfg.UseCollectionIdBasedIndexPath.GetAsBool(),
 			}
 		}
 		if isDiskANNIndex(getIndexType(indexParams)) {

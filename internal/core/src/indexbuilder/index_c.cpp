@@ -337,6 +337,7 @@ NewBuildIndexInfo(CBuildIndexInfo* c_build_index_info,
         storage_config.useVirtualHost = c_storage_config.useVirtualHost;
         storage_config.requestTimeoutMs = c_storage_config.requestTimeoutMs;
         storage_config.byok_enabled = c_storage_config.byok_enabled;
+        storage_config.useCollectionIdIndexPath = c_storage_config.useCollectionIdIndexPath;
 
         *c_build_index_info = build_index_info.release();
         auto status = CStatus();

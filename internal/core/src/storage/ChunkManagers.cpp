@@ -83,6 +83,7 @@ generateConfig(const StorageConfig& storage_config) {
 AwsChunkManager::AwsChunkManager(const StorageConfig& storage_config) {
     default_bucket_name_ = storage_config.bucket_name;
     remote_root_path_ = storage_config.root_path;
+    use_collectionId_based_index_path_ = storage_config.useCollectionIdIndexPath;
 
     InitSDKAPIDefault(storage_config.log_level);
 
@@ -121,6 +122,7 @@ AwsChunkManager::AwsChunkManager(const StorageConfig& storage_config) {
 GcpChunkManager::GcpChunkManager(const StorageConfig& storage_config) {
     default_bucket_name_ = storage_config.bucket_name;
     remote_root_path_ = storage_config.root_path;
+    use_collectionId_based_index_path_ = storage_config.useCollectionIdIndexPath;
 
     if (storage_config.useIAM) {
         sdk_options_.httpOptions.httpClientFactory_create_fn = []() {
@@ -157,6 +159,7 @@ GcpChunkManager::GcpChunkManager(const StorageConfig& storage_config) {
 AliyunChunkManager::AliyunChunkManager(const StorageConfig& storage_config) {
     default_bucket_name_ = storage_config.bucket_name;
     remote_root_path_ = storage_config.root_path;
+    use_collectionId_based_index_path_ = storage_config.useCollectionIdIndexPath;
 
     InitSDKAPIDefault(storage_config.log_level);
 
@@ -198,6 +201,7 @@ TencentCloudChunkManager::TencentCloudChunkManager(
     const StorageConfig& storage_config) {
     default_bucket_name_ = storage_config.bucket_name;
     remote_root_path_ = storage_config.root_path;
+    use_collectionId_based_index_path_ = storage_config.useCollectionIdIndexPath;
 
     InitSDKAPIDefault(storage_config.log_level);
 

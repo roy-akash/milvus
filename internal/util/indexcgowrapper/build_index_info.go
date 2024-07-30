@@ -84,6 +84,7 @@ func NewBuildIndexInfo(config *indexpb.StorageConfig) (*BuildIndexInfo, error) {
 		session_token:    cSessionToken,
 		kms_key_id:       cKmsKeyId,
 		byok_enabled:     C.bool(config.ByokEnabled),
+		useCollectionIdIndexPath: C.bool(config.UseCollectionIdIndexPath),
 	}
 
 	status := C.NewBuildIndexInfo(&cBuildIndexInfo, storageConfig)

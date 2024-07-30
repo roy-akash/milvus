@@ -100,6 +100,7 @@ struct StorageConfig {
     std::string session_token = "";
     std::string kms_key_id = "";
     bool byok_enabled = false;
+    bool useCollectionIdIndexPath = false;
 
     std::string
     ToString() const {
@@ -114,7 +115,8 @@ struct StorageConfig {
            << ", useVirtualHost=" << std::boolalpha << useVirtualHost
            << ", requestTimeoutMs=" << requestTimeoutMs
            << ", kms_key_id=" << kms_key_id
-           << ", byok_enabled=" << std::boolalpha << byok_enabled << "]";
+           << ", byok_enabled=" << std::boolalpha << byok_enabled
+           << ", useCollectionIdIndexPath=" << std::boolalpha << useCollectionIdIndexPath << "]";
         return ss.str();
     }
 };
