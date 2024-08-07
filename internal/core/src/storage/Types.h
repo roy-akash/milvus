@@ -97,6 +97,7 @@ struct StorageConfig {
     bool useIAM = false;
     bool useVirtualHost = false;
     int64_t requestTimeoutMs = 3000;
+    bool byok_enabled = false;
     bool useCollectionIdIndexPath = false;
 
     std::string
@@ -111,8 +112,8 @@ struct StorageConfig {
            << ", useIAM=" << std::boolalpha << useIAM
            << ", useVirtualHost=" << std::boolalpha << useVirtualHost
            << ", requestTimeoutMs=" << requestTimeoutMs
-           << ", useCollectionIdIndexPath=" << std::boolalpha << useCollectionIdIndexPath << "]";
-
+           << ", useCollectionIdIndexPath=" << std::boolalpha << useCollectionIdIndexPath
+           << ", byok_enabled=" << std::boolalpha << byok_enabled << "]";
         return ss.str();
     }
 };

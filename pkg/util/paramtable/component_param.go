@@ -237,6 +237,9 @@ type commonConfig struct {
 	MaxBloomFalsePositive     ParamItem `refreshable:"true"`
 	BloomFilterApplyBatchSize ParamItem `refreshable:"true"`
 
+	// Salesforce Data Cloud Milvus BYOK
+	ByokEnabled ParamItem `refreshable:"false"`
+
 	UseCollectionIdBasedIndexPath ParamItem `refreshable:"false"`
 }
 
@@ -693,6 +696,14 @@ like the old password verification when updating the credential`,
 		Export:       true,
 	}
 	p.BloomFilterApplyBatchSize.Init(base.mgr)
+
+	p.ByokEnabled = ParamItem{
+		Key:          "common.byok.enabled",
+		Version:      "2.3.19",
+		DefaultValue: "false",
+		Doc:          "Whether to enable BYOK",
+	}
+	p.ByokEnabled.Init(base.mgr)
 
 	p.UseCollectionIdBasedIndexPath = ParamItem{
 		Key:          "common.storage.useCollectionIdBasedIndexPath",
