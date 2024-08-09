@@ -97,6 +97,9 @@ struct StorageConfig {
     bool useIAM = false;
     bool useVirtualHost = false;
     int64_t requestTimeoutMs = 3000;
+    std::string session_token = "";
+    std::string kms_key_id = "";
+    bool byok_enabled = false;
 
     std::string
     ToString() const {
@@ -109,8 +112,9 @@ struct StorageConfig {
            << ", sslCACert=" << sslCACert.size()  // only print cert length
            << ", useIAM=" << std::boolalpha << useIAM
            << ", useVirtualHost=" << std::boolalpha << useVirtualHost
-           << ", requestTimeoutMs=" << requestTimeoutMs << "]";
-
+           << ", requestTimeoutMs=" << requestTimeoutMs
+           << ", kms_key_id=" << kms_key_id
+           << ", byok_enabled=" << std::boolalpha << byok_enabled << "]";
         return ss.str();
     }
 };
