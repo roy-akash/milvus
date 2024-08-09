@@ -16,7 +16,7 @@ DpcCvsAccessManagerClient::DpcCvsAccessManagerClient() {
     channelArgs.SetInt(GRPC_ARG_MAX_CONNECTION_IDLE_MS, 60000); // 60 seconds
 
     // Create the channel with the arguments
-    auto channel_ = grpc::CreateCustomChannel("localhost:7049", grpc::InsecureChannelCredentials(), channelArgs);
+    auto channel_ = grpc::CreateCustomChannel("dpc-cvs-access-manager.milvus.svc.cluster.local:7020", grpc::InsecureChannelCredentials(), channelArgs);
     stub_ = salesforce::cdp::dpccvsaccessmanager::v1::DpcCvsAccessManager::NewStub(channel_);
     if (!stub_) {
         LOG_SEGCORE_ERROR_ << "gsriram: Failed to create stub.";
