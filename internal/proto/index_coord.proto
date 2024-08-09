@@ -215,6 +215,8 @@ message StorageConfig {
   string sslCACert = 14;
   bool useCollectionIdIndexPath = 15;
   bool byok_enabled = 16;
+  string session_token = 17;
+  string kms_key_id = 18;
 }
 
 message CreateJobRequest {

@@ -91,6 +91,8 @@ typedef struct CStorageConfig {
     int64_t requestTimeoutMs;
     bool byok_enabled;
     bool useCollectionIdIndexPath;
+    const char* session_token;
+    const char* kms_key_id;
 } CStorageConfig;
 
 typedef struct CTraceConfig {
