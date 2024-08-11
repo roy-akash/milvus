@@ -121,13 +121,13 @@ CreateIndexV2(CIndex* res_index, CBuildIndexInfo c_build_index_info) {
         milvus::storage::ChunkManagerPtr chunk_manager;
 	if (build_index_info->storage_config.byok_enabled) {
 	    LOG_SEGCORE_INFO_ << "gsriram: BYOK flag enabled 2";
-	    grpc_init();
 	    LOG_SEGCORE_INFO_ << "gsriram: after grpc init";
 	    milvus::storage::CollectionChunkManager::Init(build_index_info->storage_config);
             chunk_manager = milvus::storage::CollectionChunkManager::GetChunkManager(
                 build_index_info->collection_id,
                 std::getenv("MILVUS_INSTANCE_NAME"),
                 true);
+        LOG_SEGCORE_INFO_ << "gsriram: chunk manager done";
 	} else {
 	    LOG_SEGCORE_INFO_ << "gsriram: BYOK flag is disabled";
 	    chunk_manager = milvus::storage::CreateChunkManager(
