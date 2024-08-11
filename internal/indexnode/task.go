@@ -345,7 +345,7 @@ func (it *indexBuildTask) BuildIndex(ctx context.Context) error {
 		log.Ctx(ctx).Warn("append index engine version failed", zap.Error(err))
 		return err
 	}
-
+	log.Info("Entered indexcgowrapper to create index", zap.Any("buildIndexInfo", buildIndexInfo), zap.Int64("collectionId", it.collectionID))
 	it.index, err = indexcgowrapper.CreateIndex(ctx, buildIndexInfo)
 	if err != nil {
 		if it.index != nil && it.index.CleanLocalData() != nil {
@@ -356,6 +356,7 @@ func (it *indexBuildTask) BuildIndex(ctx context.Context) error {
 		log.Ctx(ctx).Error("failed to build index", zap.Error(err))
 		return err
 	}
+	log.Info("Exited indexcgowrapper after create index")
 
 	buildIndexLatency := it.tr.RecordSpan()
 	metrics.IndexNodeKnowhereBuildIndexLatency.WithLabelValues(strconv.FormatInt(paramtable.GetNodeID(), 10)).Observe(buildIndexLatency.Seconds())
