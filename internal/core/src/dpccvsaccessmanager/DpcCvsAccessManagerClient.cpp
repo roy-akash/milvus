@@ -15,6 +15,8 @@ DpcCvsAccessManagerClient::DpcCvsAccessManagerClient() {
     //channelArgs.SetInt(GRPC_ARG_MAX_CONNECTION_AGE_MS, 60000); // 60 seconds
     //channelArgs.SetInt(GRPC_ARG_MAX_CONNECTION_IDLE_MS, 60000); // 60 seconds
     //channelArgs.SetInt(GRPC_ARG_MAX_RECONNECT_BACKOFF_MS, 10000); // 10 seconds
+
+    try{
     const char* access_manager_address_env = std::getenv("ACCESS_MANAGER_ADDRESS");
     LOG_SEGCORE_INFO_ << "gsriram: access manager address " << access_manager_address_env;
     // Create the channel with the arguments
@@ -29,7 +31,13 @@ DpcCvsAccessManagerClient::DpcCvsAccessManagerClient() {
     auto channel_state = channel_->GetState(false);
     const char* state_name = GetGrpcConnectivityStateName(channel_state);
     LOG_SEGCORE_INFO_ << "gsriram: Created channel state inside the constructor: " << state_name;
-
+    } catch (const std::exception& ex) {
+        LOG_SEGCORE_ERROR_ << "gsriram: Failed to create channel" << ex.what() << std::endl;
+        // ...
+    } catch (...) {
+        // ...
+        LOG_SEGCORE_ERROR_ << "gsriram: Failed to create channel generic error";
+    }
 }
 
 const char* DpcCvsAccessManagerClient::GetGrpcConnectivityStateName(grpc_connectivity_state state) {
