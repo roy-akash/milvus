@@ -84,13 +84,14 @@ type ComponentParam struct {
 	DataNodeGrpcServerCfg   GrpcServerConfig
 	IndexNodeGrpcServerCfg  GrpcServerConfig
 
-	RootCoordGrpcClientCfg  GrpcClientConfig
-	ProxyGrpcClientCfg      GrpcClientConfig
-	QueryCoordGrpcClientCfg GrpcClientConfig
-	QueryNodeGrpcClientCfg  GrpcClientConfig
-	DataCoordGrpcClientCfg  GrpcClientConfig
-	DataNodeGrpcClientCfg   GrpcClientConfig
-	IndexNodeGrpcClientCfg  GrpcClientConfig
+	RootCoordGrpcClientCfg     GrpcClientConfig
+	ProxyGrpcClientCfg         GrpcClientConfig
+	QueryCoordGrpcClientCfg    GrpcClientConfig
+	QueryNodeGrpcClientCfg     GrpcClientConfig
+	DataCoordGrpcClientCfg     GrpcClientConfig
+	DataNodeGrpcClientCfg      GrpcClientConfig
+	IndexNodeGrpcClientCfg     GrpcClientConfig
+	AccessManagerGrpcClientCfg GrpcClientConfig
 
 	IntegrationTestCfg integrationTestConfig
 }
@@ -140,6 +141,7 @@ func (p *ComponentParam) init(bt *BaseTable) {
 	p.DataCoordGrpcClientCfg.Init("dataCoord", bt)
 	p.DataNodeGrpcClientCfg.Init("dataNode", bt)
 	p.IndexNodeGrpcClientCfg.Init("indexNode", bt)
+	p.AccessManagerGrpcClientCfg.Init("accessManager", bt)
 
 	p.IntegrationTestCfg.init(bt)
 }
@@ -240,7 +242,8 @@ type commonConfig struct {
 	// Salesforce Data Cloud Milvus BYOK
 	ByokEnabled ParamItem `refreshable:"false"`
 
-	UseCollectionIdBasedIndexPath ParamItem `refreshable:"false"`
+	UseCollectionIdBasedIndexPath      ParamItem `refreshable:"false"`
+	CredentialsRefreshThresholdMinutes ParamItem `refreshable:"true"`
 }
 
 func (p *commonConfig) init(base *BaseTable) {
@@ -712,6 +715,14 @@ like the old password verification when updating the credential`,
 		DefaultValue: "false",
 	}
 	p.UseCollectionIdBasedIndexPath.Init(base.mgr)
+
+	p.CredentialsRefreshThresholdMinutes = ParamItem{
+		Key:          "common.credentialsRefreshThresholdMinutes",
+		Version:      "2.3.19",
+		DefaultValue: "10",
+		Doc:          "minutes mark before the expiration deadline, after this mark is crossed get new credentials from access manager",
+	}
+	p.CredentialsRefreshThresholdMinutes.Init(base.mgr)
 
 }
 
