@@ -44,6 +44,7 @@ class MilvusConan(ConanFile):
         "librdkafka/1.9.1",
         "abseil/20230125.3",
         "roaring/3.0.0",
+        "grpc/1.50.1@milvus/dev#75103960d1cac300cf425ccfccceac08",
     )
     generators = ("cmake", "cmake_find_package")
     default_options = {

@@ -151,7 +151,13 @@ func (mcm *FabricRemoteChunkManager) MultiRead(ctx context.Context, keys []strin
 }
 
 func (mcm *FabricRemoteChunkManager) retrieveCollectionIDFromFilepath(key string) (int64, error) {
-	return strconv.ParseInt(strings.Split(key, "/")[2], 10, 64)
+	collectionIdIndex := strings.Count(Params.MinioCfg.RootPath.GetValue(), "/") + 2
+	log.Info("collection id index", zap.Int("collectionIdIndex", collectionIdIndex))
+	collId, err := strconv.ParseInt(strings.Split(key, "/")[collectionIdIndex], 10, 64)
+	if err != nil {
+		log.Error("error occurred while trying to derive collection id", zap.String("key", key))
+	}
+	return collId, err
 }
 
 // Remove deletes an object with @key.
