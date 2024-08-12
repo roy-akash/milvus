@@ -477,8 +477,19 @@ func (s *Server) stopCompactionTrigger() {
 }
 
 func (s *Server) newChunkManagerFactory() (storage.ChunkManager, error) {
-	chunkManagerFactory := storage.NewChunkManagerFactoryWithParam(Params)
-	cli, err := chunkManagerFactory.NewPersistentStorageChunkManager(s.ctx)
+
+	var cli storage.ChunkManager
+	var err error
+
+	if Params.CommonCfg.ByokEnabled.GetAsBool() {
+		log.Info("BYOK is enabled initialising with fabric factory")
+		chunkManagerFactory := storage.NewFabricChunkManagerFactoryWithParam(Params)
+		cli, err = chunkManagerFactory.NewPersistentStorageChunkManager(s.ctx)
+	} else {
+		chunkManagerFactory := storage.NewChunkManagerFactoryWithParam(Params)
+		cli, err = chunkManagerFactory.NewPersistentStorageChunkManager(s.ctx)
+	}
+
 	if err != nil {
 		log.Error("chunk manager init failed", zap.Error(err))
 		return nil, err
