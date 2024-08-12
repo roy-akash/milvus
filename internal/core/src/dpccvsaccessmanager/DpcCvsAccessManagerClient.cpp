@@ -11,14 +11,15 @@ std::mutex DpcCvsAccessManagerClient::stub_mutex_;
 DpcCvsAccessManagerClient::DpcCvsAccessManagerClient() {
     LOG_SEGCORE_INFO_ << "gsriram: Inside DpcCvsAccessManagerClient constructor. ";
 
-    grpc::ChannelArguments channelArgs;
-    channelArgs.SetInt(GRPC_ARG_MAX_CONNECTION_AGE_MS, 60000); // 60 seconds
-    channelArgs.SetInt(GRPC_ARG_MAX_CONNECTION_IDLE_MS, 60000); // 60 seconds
-    channelArgs.SetInt(GRPC_ARG_MAX_RECONNECT_BACKOFF_MS, 10000); // 10 seconds
+    //grpc::ChannelArguments channelArgs;
+    //channelArgs.SetInt(GRPC_ARG_MAX_CONNECTION_AGE_MS, 60000); // 60 seconds
+    //channelArgs.SetInt(GRPC_ARG_MAX_CONNECTION_IDLE_MS, 60000); // 60 seconds
+    //channelArgs.SetInt(GRPC_ARG_MAX_RECONNECT_BACKOFF_MS, 10000); // 10 seconds
     const char* access_manager_address_env = std::getenv("ACCESS_MANAGER_ADDRESS");
-    LOG_SEGCORE_INFO_ << "gsriram: access manager address" << access_manager_address_env;
+    LOG_SEGCORE_INFO_ << "gsriram: access manager address " << access_manager_address_env;
     // Create the channel with the arguments
-    auto channel_ = grpc::CreateCustomChannel(access_manager_address_env, grpc::InsecureChannelCredentials(), channelArgs);
+    //auto channel_ = grpc::CreateCustomChannel(access_manager_address_env, grpc::InsecureChannelCredentials(), channelArgs);
+    auto channel_ = grpc::CreateChannel(access_manager_address_env, grpc::InsecureChannelCredentials());
     LOG_SEGCORE_INFO_ << "gsriram: after the channel call";
     stub_ = salesforce::cdp::dpccvsaccessmanager::v1::DpcCvsAccessManager::NewStub(channel_);
     if (!stub_) {
