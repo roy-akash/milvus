@@ -80,6 +80,7 @@ func NewBuildIndexInfo(config *indexpb.StorageConfig) (*BuildIndexInfo, error) {
 		useVirtualHost:      C.bool(config.UseVirtualHost),
 		requestTimeoutMs:    C.int64_t(config.RequestTimeoutMs),
 		gcp_credential_json: cGcpCredentialJSON,
+		byok_enabled:     C.bool(config.ByokEnabled),
 		useCollectionIdIndexPath: C.bool(config.UseCollectionIdIndexPath),
 	}
 

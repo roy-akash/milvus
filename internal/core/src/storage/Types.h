@@ -103,6 +103,7 @@ struct StorageConfig {
     int64_t requestTimeoutMs = 3000;
     bool gcp_native_without_auth = false;
     std::string gcp_credential_json = "";
+    bool byok_enabled = false;
     bool useCollectionIdIndexPath = false;
 
     std::string
@@ -117,6 +118,7 @@ struct StorageConfig {
            << ", useIAM=" << std::boolalpha << useIAM
            << ", useVirtualHost=" << std::boolalpha << useVirtualHost
            << ", useCollectionIdIndexPath=" << std::boolalpha << useCollectionIdIndexPath
+           << ", byok_enabled=" << std::boolalpha << byok_enabled
            << ", requestTimeoutMs=" << requestTimeoutMs
            << ", gcp_native_without_auth=" << std::boolalpha
            << gcp_native_without_auth << "]";

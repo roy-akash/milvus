@@ -867,6 +867,8 @@ common:
     useCollectionIdBasedIndexPath: false
     scheme: s3
     enablev2: false
+  byok:
+    enabled: false
   # Whether to disable the internal time messaging mechanism for the system. 
   # If disabled (set to false), the system will not allow DML operations, including insertion, deletion, queries, and searches. 
   # This helps Milvus-CDC synchronize incremental data

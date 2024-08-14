@@ -15,7 +15,7 @@
 // limitations under the License.
 
 #include "storage/storage_c.h"
-#include "monitor/prometheus_client.h"
+#include "storage/prometheus_client.h"
 #include "storage/RemoteChunkManagerSingleton.h"
 #include "storage/LocalChunkManagerSingleton.h"
 #include "storage/MmapManager.h"
@@ -78,6 +78,7 @@ InitRemoteChunkManagerSingleton(CStorageConfig c_storage_config) {
         storage_config.requestTimeoutMs = c_storage_config.requestTimeoutMs;
         storage_config.gcp_credential_json =
             std::string(c_storage_config.gcp_credential_json);
+        storage_config.byok_enabled = c_storage_config.byok_enabled;
         storage_config.useCollectionIdIndexPath = c_storage_config.useCollectionIdIndexPath;
         milvus::storage::RemoteChunkManagerSingleton::GetInstance().Init(
             storage_config);

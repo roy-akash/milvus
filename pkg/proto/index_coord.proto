@@ -222,6 +222,7 @@ message StorageConfig {
     string sslCACert = 14;
     string GcpCredentialJSON = 15;
     bool useCollectionIdIndexPath = 16;
+    bool byok_enabled = 17;
 }
 
 // Synchronously modify OptionalFieldInfo in index_cgo_msg.proto file

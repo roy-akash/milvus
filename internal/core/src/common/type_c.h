@@ -95,6 +95,7 @@ typedef struct CStorageConfig {
     int64_t requestTimeoutMs;
     const char* gcp_credential_json;
     bool useCollectionIdIndexPath;
+    bool byok_enabled;
 } CStorageConfig;
 
 typedef struct CMmapConfig {
