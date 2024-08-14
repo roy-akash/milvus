@@ -138,7 +138,13 @@ class FileManagerImpl : public knowhere::FileManager {
     GetRemoteIndexObjectPrefix() const {
         boost::filesystem::path prefix = rcm_->GetRootPath();
         boost::filesystem::path path = std::string(INDEX_ROOT_PATH);
+
+        // Check if the flag is true and prepend collection_id if necessary
+        std::string collection_id_prefix = rcm_->UseCollectionIdBasedIndexPath()
+                                       ? std::to_string(field_meta_.collection_id) + "/"
+                                       : "";
         boost::filesystem::path path1 =
+            collection_id_prefix +
             std::to_string(index_meta_.build_id) + "/" +
             std::to_string(index_meta_.index_version) + "/" +
             std::to_string(field_meta_.partition_id) + "/" +
@@ -148,7 +154,13 @@ class FileManagerImpl : public knowhere::FileManager {
 
     virtual std::string
     GetRemoteIndexObjectPrefixV2() const {
+        // Check if the flag is true and prepend collection_id if necessary
+        std::string collection_id_prefix = rcm_->UseCollectionIdBasedIndexPath()
+                                       ? std::to_string(field_meta_.collection_id) + "/"
+                                       : "";
+
         return std::string(INDEX_ROOT_PATH) + "/" +
+               collection_id_prefix +
                std::to_string(index_meta_.build_id) + "/" +
                std::to_string(index_meta_.index_version) + "/" +
                std::to_string(field_meta_.partition_id) + "/" +

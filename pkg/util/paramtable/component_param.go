@@ -267,6 +267,9 @@ type commonConfig struct {
 	BloomFilterType           ParamItem `refreshable:"true"`
 	MaxBloomFalsePositive     ParamItem `refreshable:"true"`
 	BloomFilterApplyBatchSize ParamItem `refreshable:"true"`
+
+	UseCollectionIdBasedIndexPath ParamItem `refreshable:"false"`
+
 	PanicWhenPluginFail       ParamItem `refreshable:"false"`
 	CollectionReplicateEnable ParamItem `refreshable:"true"`
 
@@ -840,6 +843,13 @@ This helps Milvus-CDC synchronize incremental data`,
 		Export:       true,
 	}
 	p.BloomFilterApplyBatchSize.Init(base.mgr)
+
+	p.UseCollectionIdBasedIndexPath = ParamItem{
+		Key:          "common.storage.useCollectionIdBasedIndexPath",
+		Version:      "2.3.19",
+		DefaultValue: "false",
+	}
+	p.UseCollectionIdBasedIndexPath.Init(base.mgr)
 
 	p.PanicWhenPluginFail = ParamItem{
 		Key:          "common.panicWhenPluginFail",

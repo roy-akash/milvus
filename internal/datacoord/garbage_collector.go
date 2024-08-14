@@ -56,6 +56,7 @@ type GcOption struct {
 
 	broker           broker.Broker
 	removeObjectPool *conc.Pool[struct{}]
+	useCollectionIdBasedIndexPath bool
 }
 
 // garbageCollector handles garbage files in object storage
@@ -82,12 +83,14 @@ type gcCmd struct {
 
 // newGarbageCollector create garbage collector with meta and option
 func newGarbageCollector(meta *meta, handler Handler, opt GcOption) *garbageCollector {
+	opt.useCollectionIdBasedIndexPath = Params.CommonCfg.UseCollectionIdBasedIndexPath.GetAsBool()
 	log.Info("GC with option",
 		zap.Bool("enabled", opt.enabled),
 		zap.Duration("interval", opt.checkInterval),
 		zap.Duration("scanInterval", opt.scanInterval),
 		zap.Duration("missingTolerance", opt.missingTolerance),
-		zap.Duration("dropTolerance", opt.dropTolerance))
+		zap.Duration("dropTolerance", opt.dropTolerance),
+		zap.Bool("useCollectionIdBasedIndexPath", opt.useCollectionIdBasedIndexPath))
 	opt.removeObjectPool = conc.NewPool[struct{}](Params.DataCoordCfg.GCRemoveConcurrent.GetAsInt(), conc.WithExpiryDuration(time.Minute))
 	ctx, cancel := context.WithCancel(context.Background())
 	return &garbageCollector{
@@ -682,6 +685,27 @@ func (gc *garbageCollector) recycleUnusedIndexFiles(ctx context.Context) {
 
 	prefix := path.Join(gc.option.cli.RootPath(), common.SegmentIndexPath) + "/"
 	// list dir first
+
+	// if its migrated then walk with prefix should happen a level down from root index path
+	if gc.option.useCollectionIdBasedIndexPath {
+		err := gc.option.cli.WalkWithPrefix(ctx, prefix, false, func(indexPathInfo *storage.ChunkObjectInfo) bool {
+			collPrefix := indexPathInfo.FilePath
+			logger := log.With(zap.String("prefix", prefix), zap.String("collPrefix", collPrefix))
+			logger.Info("cleaning up for collection id")
+
+			gc.cleanUpUnusedIndexFilesForPrefix(ctx,collPrefix)
+			return true
+		})
+		if err != nil {
+			log.Warn("garbageCollector recycleUnusedIndexFiles failed", zap.Error(err))
+			return
+		}
+	}else {
+		gc.cleanUpUnusedIndexFilesForPrefix(ctx,prefix)
+	}
+}
+
+func (gc *garbageCollector) cleanUpUnusedIndexFilesForPrefix(ctx context.Context, prefix string){
 	keyCount := 0
 	err := gc.option.cli.WalkWithPrefix(ctx, prefix, false, func(indexPathInfo *storage.ChunkObjectInfo) bool {
 		key := indexPathInfo.FilePath
@@ -754,7 +778,7 @@ func (gc *garbageCollector) recycleUnusedIndexFiles(ctx context.Context) {
 		logger.Info("index files recycle done")
 		return true
 	})
-	log = log.With(zap.Duration("timeCost", time.Since(start)), zap.Int("keyCount", keyCount), zap.Error(err))
+	log.With(zap.Duration("timeCost", time.Since(start)), zap.Int("keyCount", keyCount), zap.Error(err), zap.String("prefix",prefix))
 	if err != nil {
 		log.Warn("garbageCollector recycleUnusedIndexFiles failed", zap.Error(err))
 		return
@@ -762,12 +786,17 @@ func (gc *garbageCollector) recycleUnusedIndexFiles(ctx context.Context) {
 	log.Info("recycleUnusedIndexFiles done")
 }
 
+
 // getAllIndexFilesOfIndex returns the all index files of index.
 func (gc *garbageCollector) getAllIndexFilesOfIndex(segmentIndex *model.SegmentIndex) map[string]struct{} {
 	filesMap := make(map[string]struct{})
 	for _, fileID := range segmentIndex.IndexFileKeys {
-		filepath := metautil.BuildSegmentIndexFilePath(gc.option.cli.RootPath(), segmentIndex.BuildID, segmentIndex.IndexVersion,
-			segmentIndex.PartitionID, segmentIndex.SegmentID, fileID)
+		filepath := ""
+		if gc.option.useCollectionIdBasedIndexPath {
+			filepath = metautil.BuildSegmentIndexFilePathWithCollectionID(gc.option.cli.RootPath(), segmentIndex.CollectionID, segmentIndex.BuildID, segmentIndex.IndexVersion, segmentIndex.PartitionID, segmentIndex.SegmentID, fileID)
+		} else {
+			filepath = metautil.BuildSegmentIndexFilePath(gc.option.cli.RootPath(), segmentIndex.BuildID, segmentIndex.IndexVersion, segmentIndex.PartitionID, segmentIndex.SegmentID, fileID)
+		}
 		filesMap[filepath] = struct{}{}
 	}
 	return filesMap

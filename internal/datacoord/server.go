@@ -161,6 +161,12 @@ type Server struct {
 	// manage ways that data coord access other coord
 	broker broker.Broker
 
+	// flag to toggle index file base path should containe collection id or not
+	useCollectionIdBasedIndexPath bool
+
+	// streamingcoord server is embedding in datacoord now.
+	streamingCoord *streamingcoord.Server
+
 	metricsRequest *metricsinfo.MetricsRequest
 }
 
@@ -215,6 +221,7 @@ func CreateServer(ctx context.Context, factory dependency.Factory, opts ...Optio
 		metricsCacheManager:    metricsinfo.NewMetricsCacheManager(),
 		enableActiveStandBy:    Params.DataCoordCfg.EnableActiveStandby.GetAsBool(),
 		metricsRequest:         metricsinfo.NewMetricsRequest(),
+		useCollectionIdBasedIndexPath: Params.CommonCfg.UseCollectionIdBasedIndexPath.GetAsBool(),
 	}
 
 	for _, opt := range opts {
@@ -540,6 +547,7 @@ func (s *Server) initGarbageCollection(cli storage.ChunkManager) {
 		scanInterval:     Params.DataCoordCfg.GCScanIntervalInHour.GetAsDuration(time.Hour),
 		missingTolerance: Params.DataCoordCfg.GCMissingTolerance.GetAsDuration(time.Second),
 		dropTolerance:    Params.DataCoordCfg.GCDropTolerance.GetAsDuration(time.Second),
+		useCollectionIdBasedIndexPath: Params.CommonCfg.UseCollectionIdBasedIndexPath.GetAsBool(),
 	})
 }
 
