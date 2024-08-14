@@ -214,6 +214,7 @@ message StorageConfig {
   int64 request_timeout_ms = 13;
   string sslCACert = 14;
   bool useCollectionIdIndexPath = 15;
+  bool byok_enabled = 16;
 }
 
 message CreateJobRequest {
