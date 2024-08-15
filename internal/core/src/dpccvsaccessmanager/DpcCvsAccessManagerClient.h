@@ -19,9 +19,9 @@ public:
         const std::string& instance_name,
         const std::string& bucket_name,
         bool write_access);
-
+    void SetStub(salesforce::cdp::dpccvsaccessmanager::v1::DpcCvsAccessManager::StubInterface* stub);
 private:
-    std::unique_ptr<salesforce::cdp::dpccvsaccessmanager::v1::DpcCvsAccessManager::Stub> stub_;
+    std::unique_ptr<salesforce::cdp::dpccvsaccessmanager::v1::DpcCvsAccessManager::StubInterface> stub_;
 	static std::mutex stub_mutex_;
     std::shared_ptr<grpc::Channel> channel_;
 };

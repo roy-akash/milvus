@@ -18,6 +18,10 @@ DpcCvsAccessManagerClient::DpcCvsAccessManagerClient() {
     }
 }
 
+void DpcCvsAccessManagerClient::SetStub(salesforce::cdp::dpccvsaccessmanager::v1::DpcCvsAccessManager::StubInterface* stub) {
+    stub_.reset(stub);
+}
+
 salesforce::cdp::dpccvsaccessmanager::v1::GetCredentialsResponse DpcCvsAccessManagerClient::GetCredentials(
     const std::string& collection_id,
     const std::string& instance_name,
@@ -50,9 +54,6 @@ salesforce::cdp::dpccvsaccessmanager::v1::GetCredentialsResponse DpcCvsAccessMan
     LOG_SEGCORE_INFO_ << "Sending gRPC request to GetCredentials." << std::flush;
 
     try {
-        // Perform the gRPC call
-        auto deadline = std::chrono::system_clock::now() + std::chrono::seconds(10);
-        context.set_deadline(deadline);
         grpc::Status status = stub_->GetCredentials(&context, request, &response);
 
         if (status.ok()) {

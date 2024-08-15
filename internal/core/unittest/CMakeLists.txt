@@ -60,6 +60,7 @@ set(MILVUS_TEST_FILES
         test_storage.cpp
         test_binlog_index.cpp
         test_collection_chunk_manager.cpp
+        test_dpc_cvs_access_manager_client.cpp
         )
 
 if ( BUILD_DISK_ANN STREQUAL "ON" )
