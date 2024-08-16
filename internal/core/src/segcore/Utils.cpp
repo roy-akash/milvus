@@ -721,7 +721,7 @@ LoadFieldDatasFromRemote(const std::vector<std::string>& remote_files,
 
         for (const auto& file : remote_files) {
             try {
-                std::string_view collection_id_str = GetPartByIndex(file, '/', 2);
+                std::string_view collection_id_str = GetPartByIndex(file, '/', 3);
                 int64_t collection_id = std::stoll(std::string(collection_id_str));
 
                 auto future = pool.Submit([&, collection_id]() {

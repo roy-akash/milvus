@@ -13,6 +13,7 @@ include_directories(${CMAKE_HOME_DIRECTORY}/src)
 include_directories(${CMAKE_HOME_DIRECTORY}/src/thirdparty)
 
 add_definitions(-DMILVUS_TEST_SEGCORE_YAML_PATH="${CMAKE_SOURCE_DIR}/unittest/test_utils/test_segcore.yaml")
+add_definitions(-DUNIT_TESTING)
 
 # TODO: better to use ls/find pattern
 set(MILVUS_TEST_FILES
@@ -58,6 +59,7 @@ set(MILVUS_TEST_FILES
         test_chunk_cache.cpp
         test_storage.cpp
         test_binlog_index.cpp
+        test_collection_chunk_manager.cpp
         )
 
 if ( BUILD_DISK_ANN STREQUAL "ON" )
@@ -126,6 +128,7 @@ target_link_libraries(all_tests
         milvus_storage
         milvus_indexbuilder
         pthread
+        dpccvsaccessmanager
         )
 
 install(TARGETS all_tests DESTINATION unittest)

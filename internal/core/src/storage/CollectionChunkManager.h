@@ -21,22 +21,40 @@ public:
         const int64_t collection_id,
         const std::string& instance_name,
         bool write_access);
-
 private:
     static StorageConfig storageConfigTemplate;
-    static std::shared_ptr<milvus::dpccvsaccessmanager::DpcCvsAccessManagerClient> GetDpcCvsAccessManagerClient();
     static std::shared_ptr<milvus::dpccvsaccessmanager::DpcCvsAccessManagerClient> dpcCvsAccessManagerClient_;
     static std::unordered_map<int64_t, std::tuple<std::shared_ptr<ChunkManager>, std::chrono::system_clock::time_point>> chunkManagerMemoryCache;
-    static bool IsExpired(const std::chrono::system_clock::time_point& expiration);
+    static std::mutex client_mutex_;
+
+#ifdef UNIT_TESTING
+public:
+#else
+private:
+#endif
+    static std::shared_ptr<milvus::dpccvsaccessmanager::DpcCvsAccessManagerClient> GetDpcCvsAccessManagerClient();
     static StorageConfig GetUpdatedStorageConfig(const salesforce::cdp::dpccvsaccessmanager::v1::GetCredentialsResponse& response);
     static std::shared_ptr<salesforce::cdp::dpccvsaccessmanager::v1::GetCredentialsResponse> GetNewCredentials(
         const int64_t collection_id,
         const std::string& instance_name,
         const std::string& bucket_name,
         bool write_access);
-
     static std::chrono::system_clock::time_point ConvertToChronoTime(const std::string& time_str);
-    static std::mutex client_mutex_;
+    static bool IsExpired(const std::chrono::system_clock::time_point& expiration);
+
+#ifdef UNIT_TESTING
+public:
+    static void SetClientForTesting(const std::shared_ptr<milvus::dpccvsaccessmanager::DpcCvsAccessManagerClient>& client) {
+        dpcCvsAccessManagerClient_ = client;
+    }
+    static void ResetClient() {
+        dpcCvsAccessManagerClient_.reset();
+        chunkManagerMemoryCache.clear();
+    }
+    static const StorageConfig& GetStorageConfig() {
+        return storageConfigTemplate;
+    }
+#endif
 };
 
 } // namespace milvus::storage
