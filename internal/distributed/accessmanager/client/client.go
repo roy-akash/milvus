@@ -6,6 +6,7 @@ import (
 	"github.com/milvus-io/milvus/internal/util/grpcclient"
 	"github.com/milvus-io/milvus/pkg/util/funcutil"
 	"google.golang.org/grpc"
+	"os"
 
 	"github.com/milvus-io/milvus/internal/proto/dpccvspb"
 	"github.com/milvus-io/milvus/internal/types"
@@ -15,6 +16,8 @@ import (
 )
 
 var _ types.DpcCvsAccessManagerClient = (*Client)(nil)
+
+var serviceName = "milvus.proto.data.DpcCvsAccessManager"
 
 var Params *paramtable.ComponentParam = paramtable.Get()
 
@@ -26,11 +29,12 @@ type Client struct {
 }
 
 // NewClient creates a new client instance
-func NewClient(ctx context.Context) types.DpcCvsAccessManagerClient {
+func NewClient() types.DpcCvsAccessManagerClient {
+	accessManagerAddress := os.Getenv("ACCESS_MANAGER_SERVICE_URL")
 	config := &Params.AccessManagerGrpcClientCfg
 	client := &Client{
-		grpcClient: grpcclient.NewClientBase[dpccvspb.DpcCvsAccessManagerClient](config, "milvus.proto.data.DpcCvsAccessManager"),
-		address:    config.IP + ":" + config.Port.GetValue(),
+		grpcClient: grpcclient.NewClientBase[dpccvspb.DpcCvsAccessManagerClient](config, serviceName),
+		address:    accessManagerAddress,
 	}
 	client.grpcClient.SetRole(typeutil.AccessManagerRole)
 	client.grpcClient.SetGetAddrFunc(client.getAccessManagerAddr)

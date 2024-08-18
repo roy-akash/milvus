@@ -4,6 +4,7 @@ import (
 	"context"
 	grpcaccessmanagerclient "github.com/milvus-io/milvus/internal/distributed/accessmanager/client"
 	dpccvdpb "github.com/milvus-io/milvus/internal/proto/dpccvspb"
+	"github.com/milvus-io/milvus/internal/types"
 	"github.com/milvus-io/milvus/pkg/log"
 	"go.uber.org/zap"
 	"os"
@@ -11,27 +12,28 @@ import (
 	"time"
 )
 
-type Client struct {
-	Client dpccvdpb.DpcCvsAccessManagerClient
-}
-
 var (
-	instance *Client
-	once     sync.Once
+	accessManagerClient types.DpcCvsAccessManagerClient
+	once                sync.Once
 )
 
-func GetInstance(ctx context.Context) *Client {
-	once.Do(func() {
-		log.Debug("Access Manager Client initialized")
-		accessManagerClient := grpcaccessmanagerclient.NewClient(ctx)
-		instance = &Client{
-			accessManagerClient,
-		}
-	})
-	return instance
+type AccessCredentials struct {
+	AccessKeyID         string
+	SecretAccessKey     string
+	SessionToken        string
+	ExpirationTimestamp string
+	TenantKeyId         string
 }
 
-func GetCredentialsForCollection(ctx context.Context, collectionId string, bucketName string) (string, string, string, string, string, error) {
+func GetAccessManagerClient(ctx context.Context) types.DpcCvsAccessManagerClient {
+	once.Do(func() {
+		log.Debug("Access Manager Client initialized")
+		accessManagerClient = grpcaccessmanagerclient.NewClient()
+	})
+	return accessManagerClient
+}
+
+func GetCredentialsForCollection(ctx context.Context, collectionId string, bucketName string) (*AccessCredentials, error) {
 	instanceName := os.Getenv("MILVUS_INSTANCE_NAME")
 
 	log.Debug("Milvus Instance Name from env", zap.String("instanceName", instanceName))
@@ -46,24 +48,28 @@ func GetCredentialsForCollection(ctx context.Context, collectionId string, bucke
 
 	log.Debug("Credential Request to get Credentials : ", zap.Any("credentialRequest", credentialRequest))
 
-	accessManagerClient := GetInstance(ctx)
+	accessManagerClient := GetAccessManagerClient(ctx)
 
 	// Call the GetCredentials method
 	requestStartTime := time.Now().UTC()
-	credentialResponse, err := accessManagerClient.Client.GetCredentials(ctx, credentialRequest)
+	credentialResponse, err := accessManagerClient.GetCredentials(ctx, credentialRequest)
 	if err != nil {
 		log.Error("Failed to get credentials: %v", zap.Any("error", err))
-		return "", "", "", "", "", err
+		return nil, err
 	}
 	timeTakenInMilliSeconds := time.Now().UTC().Sub(requestStartTime).Milliseconds()
 	log.Info("Time taken to fetch credentials", zap.Int64("timeTakenInMilliSeconds", timeTakenInMilliSeconds))
 
-	log.Debug("Credential Response from access manager : ", zap.Any("credentialResponse", credentialResponse))
-	return credentialResponse.GetAccessKeyId(), credentialResponse.GetSecretAccessKey(),
-		credentialResponse.GetSessionToken(), credentialResponse.GetTenantKeyId(), credentialResponse.GetExpirationTimestamp(), nil
+	return &AccessCredentials{
+		credentialResponse.GetAccessKeyId(),
+		credentialResponse.GetSecretAccessKey(),
+		credentialResponse.GetSessionToken(),
+		credentialResponse.GetExpirationTimestamp(),
+		credentialResponse.GetTenantKeyId(),
+	}, nil
 }
 
-func GetGlobalCredentials(ctx context.Context, bucketName string) (string, string, string, string, error) {
+func GetGlobalCredentials(ctx context.Context, bucketName string) (*AccessCredentials, error) {
 
 	credentialRequest := &dpccvdpb.GetCredentialsRequest{
 		ApplicationType: dpccvdpb.ApplicationType_MILVUS,
@@ -72,19 +78,22 @@ func GetGlobalCredentials(ctx context.Context, bucketName string) (string, strin
 
 	log.Debug("Global Credential Request to get Credentials : ", zap.Any("credentialRequest", credentialRequest))
 
-	accessManagerClient := GetInstance(ctx)
+	accessManagerClient := GetAccessManagerClient(ctx)
 
 	// Call the GetCredentials method
 	requestStartTime := time.Now().UTC()
-	credentialResponse, err := accessManagerClient.Client.GetCredentials(ctx, credentialRequest)
+	credentialResponse, err := accessManagerClient.GetCredentials(ctx, credentialRequest)
 	if err != nil {
 		log.Error("Failed to get global credentials: %v", zap.Any("error", err))
-		return "", "", "", "", err
+		return nil, err
 	}
 	timeTakenInMilliSeconds := time.Now().UTC().Sub(requestStartTime).Milliseconds()
 	log.Info("Time taken to fetch global credentials", zap.Int64("timeTakenInMilliSeconds", timeTakenInMilliSeconds))
 
-	log.Debug("Global Credential Response from access manager : ", zap.Any("credentialResponse", credentialResponse))
-	return credentialResponse.GetAccessKeyId(), credentialResponse.GetSecretAccessKey(), credentialResponse.GetSessionToken(),
-		credentialResponse.ExpirationTimestamp, nil
+	return &AccessCredentials{
+		AccessKeyID:         credentialResponse.GetAccessKeyId(),
+		SecretAccessKey:     credentialResponse.GetSecretAccessKey(),
+		SessionToken:        credentialResponse.GetSessionToken(),
+		ExpirationTimestamp: credentialResponse.GetExpirationTimestamp(),
+	}, nil
 }

@@ -118,6 +118,7 @@ func NewIndexNode(ctx context.Context, factory dependency.Factory) *IndexNode {
 
 	var reqFactory StorageFactory
 	if Params.CommonCfg.ByokEnabled.GetAsBool() {
+		log.Info("BYOK is enabled, initializing fabric chunk manager factory")
 		reqFactory = &FabricChunkMgrFactory{}
 	} else {
 		reqFactory = NewChunkMgrFactory()
