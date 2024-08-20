@@ -242,8 +242,7 @@ type commonConfig struct {
 	// Salesforce Data Cloud Milvus BYOK
 	ByokEnabled ParamItem `refreshable:"false"`
 
-	UseCollectionIdBasedIndexPath      ParamItem `refreshable:"false"`
-	CredentialsRefreshThresholdMinutes ParamItem `refreshable:"true"`
+	UseCollectionIdBasedIndexPath ParamItem `refreshable:"false"`
 }
 
 func (p *commonConfig) init(base *BaseTable) {
@@ -715,14 +714,6 @@ like the old password verification when updating the credential`,
 		DefaultValue: "false",
 	}
 	p.UseCollectionIdBasedIndexPath.Init(base.mgr)
-
-	p.CredentialsRefreshThresholdMinutes = ParamItem{
-		Key:          "common.credentialsRefreshThresholdMinutes",
-		Version:      "2.3.19",
-		DefaultValue: "10",
-		Doc:          "minutes mark before the expiration deadline, after this mark is crossed get new credentials from access manager",
-	}
-	p.CredentialsRefreshThresholdMinutes.Init(base.mgr)
 
 }
 
