@@ -22,6 +22,8 @@
 #include "common/EasyAssert.h"
 #include "common/Consts.h"
 #include "fmt/format.h"
+#include "storage/CollectionChunkManager.h"
+#include "log/Log.h"
 #ifdef AZURE_BUILD_DIR
 #include "storage/AzureChunkManager.h"
 #endif
@@ -560,6 +562,11 @@ ReleaseArrowUnused() {
 
 ChunkManagerPtr
 CreateChunkManager(const StorageConfig& storage_config) {
+    if(storage_config.byok_enabled){
+        LOG_SEGCORE_INFO_ << "Here in Util.cpp to return collection chunk manager instance ";
+        return std::make_shared<CollectionChunkManager>(storage_config);
+//        return CollectionChunkManager::Init(storage_config);
+    }
     auto storage_type = ChunkManagerType_Map[storage_config.storage_type];
 
     switch (storage_type) {

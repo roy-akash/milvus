@@ -7,7 +7,6 @@
 #include "storage/RemoteChunkManagerSingleton.h"
 #include <grpcpp/grpcpp.h>
 #include <grpc/grpc.h>
-#include "log/Log.h"
 #include <typeinfo>
 
 
@@ -18,10 +17,14 @@ std::shared_ptr<milvus::dpccvsaccessmanager::DpcCvsAccessManagerClient> Collecti
 StorageConfig CollectionChunkManager::storageConfigTemplate;
 std::unordered_map<int64_t, std::tuple<std::shared_ptr<ChunkManager>, std::chrono::system_clock::time_point>> CollectionChunkManager::chunkManagerMemoryCache;
 
-void CollectionChunkManager::Init(const StorageConfig& config) {
-    LOG_SEGCORE_INFO_ << "Initializing CollectionChunkManager with config: " << config.ToString();
-    storageConfigTemplate = config;
-}
+
+    CollectionChunkManager::CollectionChunkManager(const StorageConfig& config) {
+        LOG_SEGCORE_INFO_ << "Initializing CollectionChunkManager with config: " << config.ToString();
+        storageConfigTemplate = config;
+        default_bucket_name_ = config.bucket_name;
+        remote_root_path_ = config.root_path;
+        use_collectionId_based_index_path_ = config.useCollectionIdIndexPath;
+    }
 
 bool CollectionChunkManager::IsExpired(const std::chrono::system_clock::time_point& expiration) {
     bool expired = std::chrono::system_clock::now() > expiration;
@@ -80,6 +83,7 @@ StorageConfig CollectionChunkManager::GetUpdatedStorageConfig(const salesforce::
     updated_config.access_key_value = response.secret_access_key();
     updated_config.session_token = response.session_token();
     updated_config.kms_key_id = response.tenant_key_id();
+    updated_config.byok_enabled = false;
     LOG_SEGCORE_INFO_ << "Updated storage config with new credentials.";
     return updated_config;
 }
@@ -90,6 +94,32 @@ std::chrono::system_clock::time_point CollectionChunkManager::ConvertToChronoTim
     ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%SZ");
     return std::chrono::system_clock::from_time_t(std::mktime(&tm));
 }
+
+
+    std::string_view
+    GetPartByIndex(const std::string_view str, char delimiter, int index) {
+        size_t start = 0;
+        size_t end = str.find(delimiter);
+
+        for (int i = 0; i <= index; ++i) {
+            if (end == std::string_view::npos) {
+                if (i == index) {
+                    return str.substr(start);
+                } else {
+                    throw std::out_of_range("Index out of range");
+                }
+            } else {
+                if (i == index) {
+                    return str.substr(start, end - start);
+                } else {
+                    start = end + 1;
+                    end = str.find(delimiter, start);
+                }
+            }
+        }
+
+        throw std::out_of_range("Index out of range");
+    }
 
 std::shared_ptr<ChunkManager> CollectionChunkManager::GetChunkManager(
     const int64_t collection_id,
@@ -137,5 +167,80 @@ std::shared_ptr<ChunkManager> CollectionChunkManager::GetChunkManager(
     LOG_SEGCORE_INFO_ << "Cached new ChunkManager for collection ID: " << collection_id;
     return chunk_manager;
 }
+
+    uint64_t
+    CollectionChunkManager::Size(const std::string& filepath) {
+//        return GetObjectSize(default_bucket_name_, filepath);
+        std::string_view collection_id_str = GetPartByIndex(filepath, '/', 3);
+        int64_t collection_id = std::stoll(std::string(collection_id_str));
+        return milvus::storage::CollectionChunkManager::GetChunkManager(
+                collection_id,
+                std::getenv("INSTANCE_NAME"),
+                true)->Size(filepath);
+    }
+
+    bool
+    CollectionChunkManager::Exist(const std::string& filepath) {
+//        return ObjectExists(default_bucket_name_, filepath);
+        std::string_view collection_id_str = GetPartByIndex(filepath, '/', 3);
+        int64_t collection_id = std::stoll(std::string(collection_id_str));
+        return milvus::storage::CollectionChunkManager::GetChunkManager(
+                collection_id,
+                std::getenv("INSTANCE_NAME"),
+                true)->Exist(filepath);
+    }
+
+    void
+    CollectionChunkManager::Remove(const std::string& filepath) {
+//        DeleteObject(default_bucket_name_, filepath);
+        std::string_view collection_id_str = GetPartByIndex(filepath, '/', 3);
+        int64_t collection_id = std::stoll(std::string(collection_id_str));
+        return milvus::storage::CollectionChunkManager::GetChunkManager(
+                collection_id,
+                std::getenv("INSTANCE_NAME"),
+                true)->Remove(filepath);
+    }
+
+    std::vector<std::string>
+    CollectionChunkManager::ListWithPrefix(const std::string& filepath) {
+    // TODO might require global creds
+//        return ListObjects(default_bucket_name_, filepath);
+        std::string_view collection_id_str = GetPartByIndex(filepath, '/', 3);
+        int64_t collection_id = std::stoll(std::string(collection_id_str));
+        return milvus::storage::CollectionChunkManager::GetChunkManager(
+                collection_id,
+                std::getenv("INSTANCE_NAME"),
+                true)->ListWithPrefix(filepath);
+
+    }
+
+    uint64_t
+    CollectionChunkManager::Read(const std::string& filepath, void* buf, uint64_t size) {
+//        return GetObjectBuffer(default_bucket_name_, filepath, buf, size);
+        std::string_view collection_id_str = GetPartByIndex(filepath, '/', 3);
+        int64_t collection_id = std::stoll(std::string(collection_id_str));
+        return milvus::storage::CollectionChunkManager::GetChunkManager(
+                collection_id,
+                std::getenv("INSTANCE_NAME"),
+                true)->Read(filepath,buf,size);
+
+    }
+
+    void
+    CollectionChunkManager::Write(const std::string& filepath,
+                             void* buf,
+                             uint64_t size) {
+//        PutObjectBuffer(default_bucket_name_, filepath, buf, size);
+        std::string_view collection_id_str = GetPartByIndex(filepath, '/', 3);
+        int64_t collection_id = std::stoll(std::string(collection_id_str));
+        return milvus::storage::CollectionChunkManager::GetChunkManager(
+                collection_id,
+                std::getenv("INSTANCE_NAME"),
+                true)->Write(filepath,buf,size);
+    }
+
+
+
+
 
 } // namespace milvus::storage
