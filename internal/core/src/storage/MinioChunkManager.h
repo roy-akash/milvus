@@ -230,9 +230,11 @@ class MinioChunkManager : public ChunkManager {
     BuildAccessKeyClient(const StorageConfig& storage_config,
                          const Aws::Client::ClientConfiguration& config);
 
+/*
     void
     BuildByokS3Client(const StorageConfig& storage_config,
                       const Aws::Client::ClientConfiguration& config);
+*/
 
     Aws::SDKOptions sdk_options_;
     static std::atomic<size_t> init_count_;

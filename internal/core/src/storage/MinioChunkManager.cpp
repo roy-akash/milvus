@@ -199,9 +199,7 @@ void
 MinioChunkManager::BuildS3Client(
     const StorageConfig& storage_config,
     const Aws::Client::ClientConfiguration& config) {
-    if (storage_config.byok_enabled) {
-        BuildByokS3Client(storage_config, config);
-    } else if (storage_config.useIAM) {
+    if (storage_config.useIAM) {
         auto provider =
             std::make_shared<Aws::Auth::DefaultAWSCredentialsProviderChain>();
         auto aws_credentials = provider->GetAWSCredentials();
@@ -252,16 +250,35 @@ MinioChunkManager::BuildAccessKeyClient(
     AssertInfo(!storage_config.access_key_value.empty(),
                "if not use iam, access value should not be empty");
 
-    client_ = std::make_shared<Aws::S3::S3Client>(
-        Aws::Auth::AWSCredentials(
-            ConvertToAwsString(storage_config.access_key_id),
-            ConvertToAwsString(storage_config.access_key_value)),
-        config,
-        Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never,
-        storage_config.useVirtualHost);
+    if (!storage_config.session_token.empty()) {
+        LOG_SEGCORE_INFO_ << "Setting cvs creds";
+        client_ = std::make_shared<Aws::S3::S3Client>(
+                Aws::Auth::AWSCredentials(
+                        ConvertToAwsString(storage_config.access_key_id),
+                        ConvertToAwsString(storage_config.access_key_value),
+                        ConvertToAwsString(storage_config.session_token)),
+                config,
+                Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never,
+                storage_config.useVirtualHost);
+    } else{
+        client_ = std::make_shared<Aws::S3::S3Client>(
+                Aws::Auth::AWSCredentials(
+                        ConvertToAwsString(storage_config.access_key_id),
+                        ConvertToAwsString(storage_config.access_key_value)),
+                config,
+                Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never,
+                storage_config.useVirtualHost);
+    }
+
+    if (!storage_config.kms_key_id.empty()) {
+        aws_kms_key_id_ = ConvertToAwsString(storage_config.kms_key_id);
+        LOG_SEGCORE_INFO_ << "Set AWS SSE KMS Key ID in MinioChunkManager: "
+                          << aws_kms_key_id_;
+    }
+
 }
 
-void
+/*void
 MinioChunkManager::BuildByokS3Client(
     const StorageConfig& storage_config,
     const Aws::Client::ClientConfiguration& config) {
@@ -288,7 +305,7 @@ MinioChunkManager::BuildByokS3Client(
         LOG_SEGCORE_INFO_ << "Set AWS SSE KMS Key ID in MinioChunkManager: "
                           << aws_kms_key_id_;
     }
-}
+}*/
 
 void
 MinioChunkManager::BuildAliyunCloudClient(
