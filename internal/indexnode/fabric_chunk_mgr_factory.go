@@ -4,12 +4,14 @@ import (
 	"context"
 	"github.com/milvus-io/milvus/internal/proto/indexpb"
 	"github.com/milvus-io/milvus/internal/storage"
+	"github.com/milvus-io/milvus/pkg/log"
 )
 
 type FabricChunkMgrFactory struct {
 }
 
 func (m *FabricChunkMgrFactory) NewChunkManager(ctx context.Context, config *indexpb.StorageConfig) (storage.ChunkManager, error) {
+	log.Info("Initializing fabric chunk manager factory")
 	chunkManagerFactory := storage.NewFabricChunkManagerFactory(config.GetStorageType(),
 		storage.RootPath(config.GetRootPath()),
 		storage.Address(config.GetAddress()),

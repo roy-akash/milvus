@@ -151,11 +151,11 @@ func newMinioClient(ctx context.Context, c *config) (*minio.Client, error) {
 		}
 		return nil
 	}
-	//TODO temp changes
+	//TODO add appropriate check in place of bucket existence
 	err = retry.Do(ctx, checkBucketFn, retry.Attempts(0))
-	//if err != nil {
-	//	return nil, err
-	//}
+	if err != nil {
+		log.Warn("Error occurred while bucket existence check")
+	}
 	return minIOClient, nil
 }
 
@@ -189,7 +189,7 @@ func (minioObjectStorage *MinioObjectStorage) PutObject(ctx context.Context, buc
 }
 
 func (minioObjectStorage *MinioObjectStorage) PutObjectWithSseKey(ctx context.Context, bucketName, objectName string, reader io.Reader, objectSize int64, sseKey string) error {
-	log.Info("Suv here. writing with SSE key")
+	log.Debug("Writing data with custom SSE key")
 	encryption, _ := encrypt.NewSSEKMS(sseKey, nil)
 	_, err := minioObjectStorage.Client.PutObject(ctx, bucketName, objectName, reader, objectSize, minio.PutObjectOptions{ServerSideEncryption: encryption})
 	return checkObjectStorageError(objectName, err)
