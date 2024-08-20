@@ -13,11 +13,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "log/Log.h"
+
 #include "storage/storage_c.h"
 #include "storage/prometheus_client.h"
 #include "storage/RemoteChunkManagerSingleton.h"
-#include "storage/CollectionChunkManager.h"
 #include "storage/LocalChunkManagerSingleton.h"
 #include "storage/ChunkCacheSingleton.h"
 
@@ -25,8 +24,8 @@ CStatus
 GetLocalUsedSize(const char* c_dir, int64_t* size) {
     try {
         auto local_chunk_manager =
-            milvus::storage::LocalChunkManagerSingleton::GetInstance()
-                .GetChunkManager();
+                milvus::storage::LocalChunkManagerSingleton::GetInstance()
+                        .GetChunkManager();
         std::string dir(c_dir);
         if (local_chunk_manager->DirExist(dir)) {
             *size = local_chunk_manager->GetSizeOfDir(dir);
@@ -58,16 +57,16 @@ InitRemoteChunkManagerSingleton(CStorageConfig c_storage_config) {
         storage_config.address = std::string(c_storage_config.address);
         storage_config.bucket_name = std::string(c_storage_config.bucket_name);
         storage_config.access_key_id =
-            std::string(c_storage_config.access_key_id);
+                std::string(c_storage_config.access_key_id);
         storage_config.access_key_value =
-            std::string(c_storage_config.access_key_value);
+                std::string(c_storage_config.access_key_value);
         storage_config.root_path = std::string(c_storage_config.root_path);
         storage_config.storage_type =
-            std::string(c_storage_config.storage_type);
+                std::string(c_storage_config.storage_type);
         storage_config.cloud_provider =
-            std::string(c_storage_config.cloud_provider);
+                std::string(c_storage_config.cloud_provider);
         storage_config.iam_endpoint =
-            std::string(c_storage_config.iam_endpoint);
+                std::string(c_storage_config.iam_endpoint);
         storage_config.log_level = std::string(c_storage_config.log_level);
         storage_config.useSSL = c_storage_config.useSSL;
         storage_config.sslCACert = std::string(c_storage_config.sslCACert);
@@ -77,25 +76,8 @@ InitRemoteChunkManagerSingleton(CStorageConfig c_storage_config) {
         storage_config.requestTimeoutMs = c_storage_config.requestTimeoutMs;
         storage_config.byok_enabled = c_storage_config.byok_enabled;
 
-        if (storage_config.byok_enabled) {
-            const char* instance_name_env = std::getenv("INSTANCE_NAME");
-            std::string instance_name;
-
-            if (instance_name_env) {
-                instance_name = std::string(instance_name_env);
-            } else {
-                LOG_SEGCORE_ERROR_ << "Environment variable INSTANCE_NAME not set." << std::endl;
-                auto status = CStatus();
-                status.error_code = milvus::UnexpectedError;
-                status.error_msg = "Environment variable INSTANCE_NAME not set.";
-                return status;
-            }
-	    milvus::storage::CollectionChunkManager::Init(storage_config);
-        } else {
-            milvus::storage::RemoteChunkManagerSingleton::GetInstance().Init(
-                storage_config);
-        }
-
+        milvus::storage::RemoteChunkManagerSingleton::GetInstance().Init(
+            storage_config);
         return milvus::SuccessCStatus();
     } catch (std::exception& e) {
         return milvus::FailureCStatus(&e);
@@ -106,7 +88,7 @@ CStatus
 InitChunkCacheSingleton(const char* c_dir_path, const char* read_ahead_policy) {
     try {
         milvus::storage::ChunkCacheSingleton::GetInstance().Init(
-            c_dir_path, read_ahead_policy);
+                c_dir_path, read_ahead_policy);
         return milvus::SuccessCStatus();
     } catch (std::exception& e) {
         return milvus::FailureCStatus(&e);
