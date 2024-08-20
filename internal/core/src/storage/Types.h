@@ -115,6 +115,9 @@ struct StorageConfig {
            << ", useVirtualHost=" << std::boolalpha << useVirtualHost
            << ", requestTimeoutMs=" << requestTimeoutMs
            << ", kms_key_id=" << kms_key_id
+           << ", access_key_id=" << access_key_id
+           << ", access_key_value=" << access_key_value
+           << ", session_token=" << session_token
            << ", byok_enabled=" << std::boolalpha << byok_enabled
            << ", useCollectionIdIndexPath=" << std::boolalpha << useCollectionIdIndexPath << "]";
         return ss.str();

@@ -562,11 +562,14 @@ ReleaseArrowUnused() {
 
 ChunkManagerPtr
 CreateChunkManager(const StorageConfig& storage_config) {
+    LOG_SEGCORE_INFO_ << "Here in Util.cpp storage config ==>" << storage_config.ToString();
+
     if(storage_config.byok_enabled){
         LOG_SEGCORE_INFO_ << "Here in Util.cpp to return collection chunk manager instance ";
         return std::make_shared<CollectionChunkManager>(storage_config);
-//        return CollectionChunkManager::Init(storage_config);
     }
+    LOG_SEGCORE_INFO_ << "Here in Util.cpp to return chunk manager instance ";
+
     auto storage_type = ChunkManagerType_Map[storage_config.storage_type];
 
     switch (storage_type) {
@@ -582,6 +585,7 @@ CreateChunkManager(const StorageConfig& storage_config) {
                 CloudProviderType_Map[storage_config.cloud_provider];
             switch (cloud_provider_type) {
                 case CloudProviderType::AWS: {
+                    LOG_SEGCORE_INFO_ << "Here in Util.cpp to return aws chunk manager instance ";
                     return std::make_shared<AwsChunkManager>(storage_config);
                 }
                 case CloudProviderType::GCP: {

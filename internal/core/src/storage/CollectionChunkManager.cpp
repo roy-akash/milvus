@@ -131,12 +131,6 @@ std::shared_ptr<ChunkManager> CollectionChunkManager::GetChunkManager(
                 .GetRemoteChunkManager();
     }
 
-    if (!storageConfigTemplate.byok_enabled) {
-        LOG_SEGCORE_INFO_ << "BYOK not enabled, using RemoteChunkManagerSingleton.";
-        return milvus::storage::RemoteChunkManagerSingleton::GetInstance()
-                .GetRemoteChunkManager();
-    }
-
     const std::string& bucket_name = storageConfigTemplate.bucket_name;
     LOG_SEGCORE_INFO_ << "Getting ChunkManager for collection ID: " << collection_id;
 
@@ -170,7 +164,7 @@ std::shared_ptr<ChunkManager> CollectionChunkManager::GetChunkManager(
 
     uint64_t
     CollectionChunkManager::Size(const std::string& filepath) {
-//        return GetObjectSize(default_bucket_name_, filepath);
+        LOG_SEGCORE_INFO_ << "Here in CollectionChunkManager.cpp Size ";
         std::string_view collection_id_str = GetPartByIndex(filepath, '/', 3);
         int64_t collection_id = std::stoll(std::string(collection_id_str));
         return milvus::storage::CollectionChunkManager::GetChunkManager(
@@ -181,7 +175,7 @@ std::shared_ptr<ChunkManager> CollectionChunkManager::GetChunkManager(
 
     bool
     CollectionChunkManager::Exist(const std::string& filepath) {
-//        return ObjectExists(default_bucket_name_, filepath);
+        LOG_SEGCORE_INFO_ << "Here in CollectionChunkManager.cpp Exist ";
         std::string_view collection_id_str = GetPartByIndex(filepath, '/', 3);
         int64_t collection_id = std::stoll(std::string(collection_id_str));
         return milvus::storage::CollectionChunkManager::GetChunkManager(
@@ -192,7 +186,7 @@ std::shared_ptr<ChunkManager> CollectionChunkManager::GetChunkManager(
 
     void
     CollectionChunkManager::Remove(const std::string& filepath) {
-//        DeleteObject(default_bucket_name_, filepath);
+        LOG_SEGCORE_INFO_ << "Here in CollectionChunkManager.cpp Remove ";
         std::string_view collection_id_str = GetPartByIndex(filepath, '/', 3);
         int64_t collection_id = std::stoll(std::string(collection_id_str));
         return milvus::storage::CollectionChunkManager::GetChunkManager(
@@ -205,6 +199,7 @@ std::shared_ptr<ChunkManager> CollectionChunkManager::GetChunkManager(
     CollectionChunkManager::ListWithPrefix(const std::string& filepath) {
     // TODO might require global creds
 //        return ListObjects(default_bucket_name_, filepath);
+        LOG_SEGCORE_INFO_ << "Here in CollectionChunkManager.cpp ListWithPrefix ";
         std::string_view collection_id_str = GetPartByIndex(filepath, '/', 3);
         int64_t collection_id = std::stoll(std::string(collection_id_str));
         return milvus::storage::CollectionChunkManager::GetChunkManager(
@@ -216,7 +211,7 @@ std::shared_ptr<ChunkManager> CollectionChunkManager::GetChunkManager(
 
     uint64_t
     CollectionChunkManager::Read(const std::string& filepath, void* buf, uint64_t size) {
-//        return GetObjectBuffer(default_bucket_name_, filepath, buf, size);
+        LOG_SEGCORE_INFO_ << "Here in CollectionChunkManager.cpp Read ";
         std::string_view collection_id_str = GetPartByIndex(filepath, '/', 3);
         int64_t collection_id = std::stoll(std::string(collection_id_str));
         return milvus::storage::CollectionChunkManager::GetChunkManager(
@@ -230,7 +225,7 @@ std::shared_ptr<ChunkManager> CollectionChunkManager::GetChunkManager(
     CollectionChunkManager::Write(const std::string& filepath,
                              void* buf,
                              uint64_t size) {
-//        PutObjectBuffer(default_bucket_name_, filepath, buf, size);
+        LOG_SEGCORE_INFO_ << "Here in CollectionChunkManager.cpp Write ";
         std::string_view collection_id_str = GetPartByIndex(filepath, '/', 3);
         int64_t collection_id = std::stoll(std::string(collection_id_str));
         return milvus::storage::CollectionChunkManager::GetChunkManager(
