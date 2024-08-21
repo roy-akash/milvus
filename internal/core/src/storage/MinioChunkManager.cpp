@@ -226,9 +226,9 @@ MinioChunkManager::PreCheck(const StorageConfig& config) {
                       << config.ToString();
     try {
         // Just test connection not check real list, avoid cost resource.
-        if(!config.byok_enabled){
+        /*if(!config.byok_enabled){
             ListWithPrefix("justforconnectioncheck");
-        }
+        }*/
     } catch (SegcoreError& e) {
         auto err_message = fmt::format(
             "precheck chunk manager client failed, "
