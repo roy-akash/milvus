@@ -16,11 +16,12 @@ namespace milvus::storage {
 
 class CollectionChunkManager : public ChunkManager {
 public:
-    CollectionChunkManager(const StorageConfig& config);
+    CollectionChunkManager(const CollectionChunkManager&) = delete;
+    CollectionChunkManager& operator=(const CollectionChunkManager&) = delete;
+    static std::shared_ptr<CollectionChunkManager> GetInstance(const StorageConfig& config);
     std::string default_bucket_name_;
     std::string remote_root_path_;
     bool use_collectionId_based_index_path_;
-    static void Init(const StorageConfig& config);
     static std::shared_ptr<ChunkManager> GetChunkManager(
         const int64_t collection_id,
         const std::string& instance_name,
@@ -82,20 +83,21 @@ public:
     }
 
     bool
-    BucketExists(const std::string& bucket_name);
-
-    bool
-    CreateBucket(const std::string& bucket_name);
-
-    bool
-    DeleteBucket(const std::string& bucket_name);
-
-    std::vector<std::string>
-    ListBuckets();
-
-    bool
     UseCollectionIdBasedIndexPath() const { return use_collectionId_based_index_path_; }
+
+    static std::string_view GetPartByIndex(const std::string_view str, char delimiter, int index);
+    template <typename ChunkAction, typename... Args>
+    static auto ApplyToChunkManager(const std::string& filepath, ChunkAction action, Args&&... args) {
+        std::string_view collection_id_str = GetPartByIndex(filepath, '/', 3);
+        int64_t collection_id = std::stoll(std::string(collection_id_str));
+        auto chunk_manager = GetChunkManager(collection_id, std::getenv("INSTANCE_NAME"), true);
+        return ((*chunk_manager).*action)(std::forward<Args>(args)...);
+    }
+
 private:
+    CollectionChunkManager(const StorageConfig& config);
+    static std::shared_ptr<CollectionChunkManager> instance;
+    static std::mutex mutex_;
     static StorageConfig storageConfigTemplate;
     static std::shared_ptr<milvus::dpccvsaccessmanager::DpcCvsAccessManagerClient> dpcCvsAccessManagerClient_;
     static std::unordered_map<int64_t, std::tuple<std::shared_ptr<ChunkManager>, std::chrono::system_clock::time_point>> chunkManagerMemoryCache;

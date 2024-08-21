@@ -563,9 +563,8 @@ ReleaseArrowUnused() {
 ChunkManagerPtr
 CreateChunkManager(const StorageConfig& storage_config) {
     if(storage_config.byok_enabled){
-        LOG_SEGCORE_INFO_ << "Here in Util.cpp to return collection chunk manager instance ";
-        return std::make_shared<CollectionChunkManager>(storage_config);
-//        return CollectionChunkManager::Init(storage_config);
+        LOG_SEGCORE_INFO_ << "Initializing a new CollectionChunkManager with BYOK enabled. Configuration details: " << storage_config.ToString();
+        return CollectionChunkManager::GetInstance(storage_config);
     }
     auto storage_type = ChunkManagerType_Map[storage_config.storage_type];
 

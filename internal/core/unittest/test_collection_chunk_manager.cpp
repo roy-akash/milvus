@@ -17,35 +17,40 @@ public:
                 (const std::string&, const std::string&, const std::string&, bool), (override));
 };
 
-
 class CollectionChunkManagerTest : public ::testing::Test {
 protected:
     std::shared_ptr<MockDpcCvsAccessManager> mock_client;
+    std::shared_ptr<CollectionChunkManager> collection_chunk_manager;
 
     void SetUp() override {
         StorageConfig config;
         config.bucket_name = "test_bucket";
         config.byok_enabled = true;
-        CollectionChunkManager::Init(config);
 
+        // Initialize the singleton instance with the config
+        collection_chunk_manager = CollectionChunkManager::GetInstance(config);
+
+        // Set up the mock client for testing
         mock_client = std::make_shared<NiceMock<MockDpcCvsAccessManager>>();
-        CollectionChunkManager::SetClientForTesting(mock_client);
+        collection_chunk_manager->SetClientForTesting(mock_client);
     }
 
     void TearDown() override {
-        CollectionChunkManager::ResetClient();
+        collection_chunk_manager->ResetClient();
+        // Reset the singleton instance to ensure clean state for other tests
+        collection_chunk_manager.reset();
     }
 };
 
 TEST_F(CollectionChunkManagerTest, InitSetsConfigurationCorrectly) {
-    ASSERT_EQ(CollectionChunkManager::GetStorageConfig().bucket_name, "test_bucket");
+    ASSERT_EQ(collection_chunk_manager->GetStorageConfig().bucket_name, "test_bucket");
 }
 
 TEST_F(CollectionChunkManagerTest, GetDpcCvsAccessManagerClientCreatesClientCorrectly) {
-    auto client = CollectionChunkManager::GetDpcCvsAccessManagerClient();
+    auto client = collection_chunk_manager->GetDpcCvsAccessManagerClient();
     ASSERT_NE(client, nullptr);
 
-    auto client_again = CollectionChunkManager::GetDpcCvsAccessManagerClient();
+    auto client_again = collection_chunk_manager->GetDpcCvsAccessManagerClient();
     ASSERT_EQ(client, client_again);
 }
 
@@ -55,7 +60,7 @@ TEST_F(CollectionChunkManagerTest, GetNewCredentialsFetchesValidCredentials) {
     EXPECT_CALL(*mock_client, GetCredentials(_, _, _, _))
         .WillOnce(Return(mock_response));
 
-    auto credentials = CollectionChunkManager::GetNewCredentials(123, "instance", "bucket", true);
+    auto credentials = collection_chunk_manager->GetNewCredentials(123, "instance", "bucket", true);
     ASSERT_EQ(credentials->access_key_id(), "test_key");
 }
 
@@ -64,13 +69,13 @@ TEST_F(CollectionChunkManagerTest, IsExpiredCorrectlyDeterminesExpiration) {
     auto past = now - std::chrono::hours(1);
     auto future = now + std::chrono::hours(1);
 
-    ASSERT_TRUE(CollectionChunkManager::IsExpired(past));
-    ASSERT_FALSE(CollectionChunkManager::IsExpired(future));
+    ASSERT_TRUE(collection_chunk_manager->IsExpired(past));
+    ASSERT_FALSE(collection_chunk_manager->IsExpired(future));
 }
 
 TEST_F(CollectionChunkManagerTest, ConvertToChronoTimeHandlesDifferentFormats) {
     std::string time_str = "2023-08-20T15:00:00Z";
-    auto time_point = CollectionChunkManager::ConvertToChronoTime(time_str);
+    auto time_point = collection_chunk_manager->ConvertToChronoTime(time_str);
     std::time_t t = std::chrono::system_clock::to_time_t(time_point);
     std::tm* ptm = std::gmtime(&t);
     ASSERT_EQ(ptm->tm_year + 1900, 2023);
@@ -86,7 +91,7 @@ TEST_F(CollectionChunkManagerTest, GetUpdatedStorageConfigUpdatesCorrectly) {
     response.set_session_token("session_token");
     response.set_tenant_key_id("tenant_key_id");
 
-    auto config = CollectionChunkManager::GetUpdatedStorageConfig(response);
+    auto config = collection_chunk_manager->GetUpdatedStorageConfig(response);
 
     ASSERT_EQ(config.access_key_id, "access_key_id");
     ASSERT_EQ(config.access_key_value, "secret_access_key");
