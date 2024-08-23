@@ -24,6 +24,7 @@
 #include <aws/core/http/curl/CurlHttpClient.h>
 #include <aws/core/http/standard/StandardHttpRequest.h>
 #include <aws/core/utils/logging/FormattedLogSystem.h>
+#include <aws/core/utils/memory/stl/AWSString.h>
 #include <aws/s3/S3Client.h>
 #include <google/cloud/credentials.h>
 #include <google/cloud/internal/oauth2_credentials.h>
@@ -236,6 +237,7 @@ class MinioChunkManager : public ChunkManager {
     std::string default_bucket_name_;
     std::string remote_root_path_;
     bool use_collectionId_based_index_path_;
+    Aws::String aws_kms_key_id_;
 };
 
 class AwsChunkManager : public MinioChunkManager {

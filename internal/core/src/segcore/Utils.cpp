@@ -26,271 +26,271 @@
 
 namespace milvus::segcore {
 
-void
-ParsePksFromFieldData(std::vector<PkType>& pks, const DataArray& data) {
-    auto data_type = static_cast<DataType>(data.type());
-    switch (data_type) {
-        case DataType::INT64: {
-            auto source_data = reinterpret_cast<const int64_t*>(
-                data.scalars().long_data().data().data());
-            std::copy_n(source_data, pks.size(), pks.data());
-            break;
-        }
-        case DataType::VARCHAR: {
-            auto& src_data = data.scalars().string_data().data();
-            std::copy(src_data.begin(), src_data.end(), pks.begin());
-            break;
-        }
-        default: {
-            PanicInfo(DataTypeInvalid, "unsupported PK {}", data_type);
-        }
-    }
-}
-
-void
-ParsePksFromFieldData(DataType data_type,
-                      std::vector<PkType>& pks,
-                      const std::vector<storage::FieldDataPtr>& datas) {
-    int64_t offset = 0;
-
-    for (auto& field_data : datas) {
-        AssertInfo(data_type == field_data->get_data_type(),
-                   "inconsistent data type when parse pk from field data");
-        int64_t row_count = field_data->get_num_rows();
+    void
+    ParsePksFromFieldData(std::vector<PkType>& pks, const DataArray& data) {
+        auto data_type = static_cast<DataType>(data.type());
         switch (data_type) {
             case DataType::INT64: {
-                std::copy_n(static_cast<const int64_t*>(field_data->Data()),
-                            row_count,
-                            pks.data() + offset);
+                auto source_data = reinterpret_cast<const int64_t*>(
+                        data.scalars().long_data().data().data());
+                std::copy_n(source_data, pks.size(), pks.data());
                 break;
             }
             case DataType::VARCHAR: {
-                std::copy_n(static_cast<const std::string*>(field_data->Data()),
-                            row_count,
-                            pks.data() + offset);
+                auto& src_data = data.scalars().string_data().data();
+                std::copy(src_data.begin(), src_data.end(), pks.begin());
                 break;
             }
             default: {
                 PanicInfo(DataTypeInvalid, "unsupported PK {}", data_type);
             }
         }
-        offset += row_count;
     }
-}
 
-void
-ParsePksFromIDs(std::vector<PkType>& pks,
-                DataType data_type,
-                const IdArray& data) {
-    switch (data_type) {
-        case DataType::INT64: {
-            auto source_data =
-                reinterpret_cast<const int64_t*>(data.int_id().data().data());
-            std::copy_n(source_data, pks.size(), pks.data());
-            break;
+    void
+    ParsePksFromFieldData(DataType data_type,
+                          std::vector<PkType>& pks,
+                          const std::vector<storage::FieldDataPtr>& datas) {
+        int64_t offset = 0;
+
+        for (auto& field_data : datas) {
+            AssertInfo(data_type == field_data->get_data_type(),
+                       "inconsistent data type when parse pk from field data");
+            int64_t row_count = field_data->get_num_rows();
+            switch (data_type) {
+                case DataType::INT64: {
+                    std::copy_n(static_cast<const int64_t*>(field_data->Data()),
+                                row_count,
+                                pks.data() + offset);
+                    break;
+                }
+                case DataType::VARCHAR: {
+                    std::copy_n(static_cast<const std::string*>(field_data->Data()),
+                                row_count,
+                                pks.data() + offset);
+                    break;
+                }
+                default: {
+                    PanicInfo(DataTypeInvalid, "unsupported PK {}", data_type);
+                }
+            }
+            offset += row_count;
         }
-        case DataType::VARCHAR: {
-            auto& source_data = data.str_id().data();
-            std::copy(source_data.begin(), source_data.end(), pks.begin());
-            break;
-        }
-        default: {
-            PanicInfo(DataTypeInvalid, "unsupported PK {}", data_type);
-        }
-    }
-}
-
-int64_t
-GetSizeOfIdArray(const IdArray& data) {
-    if (data.has_int_id()) {
-        return data.int_id().data_size();
     }
 
-    if (data.has_str_id()) {
-        return data.str_id().data_size();
-    }
-
-    PanicInfo(DataTypeInvalid, "unsupported id {}", data.descriptor()->name());
-}
-
-int64_t
-GetRawDataSizeOfDataArray(const DataArray* data,
-                          const FieldMeta& field_meta,
-                          int64_t num_rows) {
-    int64_t result = 0;
-    auto data_type = field_meta.get_data_type();
-    if (!datatype_is_variable(data_type)) {
-        result = field_meta.get_sizeof() * num_rows;
-    } else {
+    void
+    ParsePksFromIDs(std::vector<PkType>& pks,
+                    DataType data_type,
+                    const IdArray& data) {
         switch (data_type) {
-            case DataType::STRING:
+            case DataType::INT64: {
+                auto source_data =
+                        reinterpret_cast<const int64_t*>(data.int_id().data().data());
+                std::copy_n(source_data, pks.size(), pks.data());
+                break;
+            }
             case DataType::VARCHAR: {
-                auto& string_data = FIELD_DATA(data, string);
-                for (auto& str : string_data) {
-                    result += str.size();
-                }
-                break;
-            }
-            case DataType::JSON: {
-                auto& json_data = FIELD_DATA(data, json);
-                for (auto& json_bytes : json_data) {
-                    result += json_bytes.size();
-                }
-                break;
-            }
-            case DataType::ARRAY: {
-                auto& array_data = FIELD_DATA(data, array);
-                switch (field_meta.get_element_type()) {
-                    case DataType::BOOL: {
-                        for (auto& array_bytes : array_data) {
-                            result += array_bytes.bool_data().data_size() *
-                                      sizeof(bool);
-                        }
-                        break;
-                    }
-                    case DataType::INT8:
-                    case DataType::INT16:
-                    case DataType::INT32: {
-                        for (auto& array_bytes : array_data) {
-                            result += array_bytes.int_data().data_size() *
-                                      sizeof(int);
-                        }
-                        break;
-                    }
-                    case DataType::INT64: {
-                        for (auto& array_bytes : array_data) {
-                            result += array_bytes.long_data().data_size() *
-                                      sizeof(int64_t);
-                        }
-                        break;
-                    }
-                    case DataType::FLOAT: {
-                        for (auto& array_bytes : array_data) {
-                            result += array_bytes.float_data().data_size() *
-                                      sizeof(float);
-                        }
-                        break;
-                    }
-                    case DataType::DOUBLE: {
-                        for (auto& array_bytes : array_data) {
-                            result += array_bytes.double_data().data_size() *
-                                      sizeof(double);
-                        }
-                        break;
-                    }
-                    case DataType::VARCHAR:
-                    case DataType::STRING: {
-                        for (auto& array_bytes : array_data) {
-                            auto element_num =
-                                array_bytes.string_data().data_size();
-                            for (int i = 0; i < element_num; ++i) {
-                                result +=
-                                    array_bytes.string_data().data(i).size();
-                            }
-                        }
-                        break;
-                    }
-                    default:
-                        PanicInfo(
-                            DataTypeInvalid,
-                            fmt::format("unsupported element type for array",
-                                        field_meta.get_element_type()));
-                }
-
+                auto& source_data = data.str_id().data();
+                std::copy(source_data.begin(), source_data.end(), pks.begin());
                 break;
             }
             default: {
-                PanicInfo(
-                    DataTypeInvalid,
-                    fmt::format("unsupported variable datatype {}", data_type));
+                PanicInfo(DataTypeInvalid, "unsupported PK {}", data_type);
             }
         }
     }
 
-    return result;
-}
+    int64_t
+    GetSizeOfIdArray(const IdArray& data) {
+        if (data.has_int_id()) {
+            return data.int_id().data_size();
+        }
+
+        if (data.has_str_id()) {
+            return data.str_id().data_size();
+        }
+
+        PanicInfo(DataTypeInvalid, "unsupported id {}", data.descriptor()->name());
+    }
+
+    int64_t
+    GetRawDataSizeOfDataArray(const DataArray* data,
+                              const FieldMeta& field_meta,
+                              int64_t num_rows) {
+        int64_t result = 0;
+        auto data_type = field_meta.get_data_type();
+        if (!datatype_is_variable(data_type)) {
+            result = field_meta.get_sizeof() * num_rows;
+        } else {
+            switch (data_type) {
+                case DataType::STRING:
+                case DataType::VARCHAR: {
+                    auto& string_data = FIELD_DATA(data, string);
+                    for (auto& str : string_data) {
+                        result += str.size();
+                    }
+                    break;
+                }
+                case DataType::JSON: {
+                    auto& json_data = FIELD_DATA(data, json);
+                    for (auto& json_bytes : json_data) {
+                        result += json_bytes.size();
+                    }
+                    break;
+                }
+                case DataType::ARRAY: {
+                    auto& array_data = FIELD_DATA(data, array);
+                    switch (field_meta.get_element_type()) {
+                        case DataType::BOOL: {
+                            for (auto& array_bytes : array_data) {
+                                result += array_bytes.bool_data().data_size() *
+                                          sizeof(bool);
+                            }
+                            break;
+                        }
+                        case DataType::INT8:
+                        case DataType::INT16:
+                        case DataType::INT32: {
+                            for (auto& array_bytes : array_data) {
+                                result += array_bytes.int_data().data_size() *
+                                          sizeof(int);
+                            }
+                            break;
+                        }
+                        case DataType::INT64: {
+                            for (auto& array_bytes : array_data) {
+                                result += array_bytes.long_data().data_size() *
+                                          sizeof(int64_t);
+                            }
+                            break;
+                        }
+                        case DataType::FLOAT: {
+                            for (auto& array_bytes : array_data) {
+                                result += array_bytes.float_data().data_size() *
+                                          sizeof(float);
+                            }
+                            break;
+                        }
+                        case DataType::DOUBLE: {
+                            for (auto& array_bytes : array_data) {
+                                result += array_bytes.double_data().data_size() *
+                                          sizeof(double);
+                            }
+                            break;
+                        }
+                        case DataType::VARCHAR:
+                        case DataType::STRING: {
+                            for (auto& array_bytes : array_data) {
+                                auto element_num =
+                                        array_bytes.string_data().data_size();
+                                for (int i = 0; i < element_num; ++i) {
+                                    result +=
+                                            array_bytes.string_data().data(i).size();
+                                }
+                            }
+                            break;
+                        }
+                        default:
+                            PanicInfo(
+                                    DataTypeInvalid,
+                                    fmt::format("unsupported element type for array",
+                                                field_meta.get_element_type()));
+                    }
+
+                    break;
+                }
+                default: {
+                    PanicInfo(
+                            DataTypeInvalid,
+                            fmt::format("unsupported variable datatype {}", data_type));
+                }
+            }
+        }
+
+        return result;
+    }
 
 // Note: this is temporary solution.
 // modify bulk script implement to make process more clear
 
-std::unique_ptr<DataArray>
-CreateScalarDataArray(int64_t count, const FieldMeta& field_meta) {
+    std::unique_ptr<DataArray>
+            CreateScalarDataArray(int64_t count, const FieldMeta& field_meta) {
     auto data_type = field_meta.get_data_type();
     auto data_array = std::make_unique<DataArray>();
     data_array->set_field_id(field_meta.get_id().get());
     data_array->set_type(static_cast<milvus::proto::schema::DataType>(
-        field_meta.get_data_type()));
+            field_meta.get_data_type()));
 
     auto scalar_array = data_array->mutable_scalars();
     switch (data_type) {
-        case DataType::BOOL: {
-            auto obj = scalar_array->mutable_bool_data();
-            obj->mutable_data()->Resize(count, false);
-            break;
-        }
-        case DataType::INT8: {
-            auto obj = scalar_array->mutable_int_data();
-            obj->mutable_data()->Resize(count, 0);
-            break;
-        }
-        case DataType::INT16: {
-            auto obj = scalar_array->mutable_int_data();
-            obj->mutable_data()->Resize(count, 0);
-            break;
-        }
-        case DataType::INT32: {
-            auto obj = scalar_array->mutable_int_data();
-            obj->mutable_data()->Resize(count, 0);
-            break;
-        }
-        case DataType::INT64: {
-            auto obj = scalar_array->mutable_long_data();
-            obj->mutable_data()->Resize(count, 0);
-            break;
-        }
-        case DataType::FLOAT: {
-            auto obj = scalar_array->mutable_float_data();
-            obj->mutable_data()->Resize(count, 0);
-            break;
-        }
-        case DataType::DOUBLE: {
-            auto obj = scalar_array->mutable_double_data();
-            obj->mutable_data()->Resize(count, 0);
-            break;
-        }
-        case DataType::VARCHAR:
-        case DataType::STRING: {
-            auto obj = scalar_array->mutable_string_data();
-            obj->mutable_data()->Reserve(count);
-            for (auto i = 0; i < count; i++) {
-                *(obj->mutable_data()->Add()) = std::string();
-            }
-            break;
-        }
-        case DataType::JSON: {
-            auto obj = scalar_array->mutable_json_data();
-            obj->mutable_data()->Reserve(count);
-            for (int i = 0; i < count; i++) {
-                *(obj->mutable_data()->Add()) = std::string();
-            }
-            break;
-        }
-        case DataType::ARRAY: {
-            auto obj = scalar_array->mutable_array_data();
-            obj->mutable_data()->Reserve(count);
-            obj->set_element_type(static_cast<milvus::proto::schema::DataType>(
-                field_meta.get_element_type()));
-            for (int i = 0; i < count; i++) {
-                *(obj->mutable_data()->Add()) = proto::schema::ScalarField();
-            }
-            break;
-        }
-        default: {
-            PanicInfo(DataTypeInvalid, "unsupported datatype {}", data_type);
-        }
-    }
+    case DataType::BOOL: {
+    auto obj = scalar_array->mutable_bool_data();
+    obj->mutable_data()->Resize(count, false);
+    break;
+}
+case DataType::INT8: {
+auto obj = scalar_array->mutable_int_data();
+obj->mutable_data()->Resize(count, 0);
+break;
+}
+case DataType::INT16: {
+auto obj = scalar_array->mutable_int_data();
+obj->mutable_data()->Resize(count, 0);
+break;
+}
+case DataType::INT32: {
+auto obj = scalar_array->mutable_int_data();
+obj->mutable_data()->Resize(count, 0);
+break;
+}
+case DataType::INT64: {
+auto obj = scalar_array->mutable_long_data();
+obj->mutable_data()->Resize(count, 0);
+break;
+}
+case DataType::FLOAT: {
+auto obj = scalar_array->mutable_float_data();
+obj->mutable_data()->Resize(count, 0);
+break;
+}
+case DataType::DOUBLE: {
+auto obj = scalar_array->mutable_double_data();
+obj->mutable_data()->Resize(count, 0);
+break;
+}
+case DataType::VARCHAR:
+case DataType::STRING: {
+auto obj = scalar_array->mutable_string_data();
+obj->mutable_data()->Reserve(count);
+for (auto i = 0; i < count; i++) {
+*(obj->mutable_data()->Add()) = std::string();
+}
+break;
+}
+case DataType::JSON: {
+auto obj = scalar_array->mutable_json_data();
+obj->mutable_data()->Reserve(count);
+for (int i = 0; i < count; i++) {
+*(obj->mutable_data()->Add()) = std::string();
+}
+break;
+}
+case DataType::ARRAY: {
+auto obj = scalar_array->mutable_array_data();
+obj->mutable_data()->Reserve(count);
+obj->set_element_type(static_cast<milvus::proto::schema::DataType>(
+        field_meta.get_element_type()));
+for (int i = 0; i < count; i++) {
+*(obj->mutable_data()->Add()) = proto::schema::ScalarField();
+}
+break;
+}
+default: {
+PanicInfo(DataTypeInvalid, "unsupported datatype {}", data_type);
+}
+}
 
-    return data_array;
+return data_array;
 }
 
 std::unique_ptr<DataArray>
@@ -299,7 +299,7 @@ CreateVectorDataArray(int64_t count, const FieldMeta& field_meta) {
     auto data_array = std::make_unique<DataArray>();
     data_array->set_field_id(field_meta.get_id().get());
     data_array->set_type(static_cast<milvus::proto::schema::DataType>(
-        field_meta.get_data_type()));
+                                 field_meta.get_data_type()));
 
     auto vector_array = data_array->mutable_vectors();
     auto dim = field_meta.get_dim();
@@ -334,7 +334,7 @@ CreateScalarDataArrayFrom(const void* data_raw,
     auto data_array = std::make_unique<DataArray>();
     data_array->set_field_id(field_meta.get_id().get());
     data_array->set_type(static_cast<milvus::proto::schema::DataType>(
-        field_meta.get_data_type()));
+                                 field_meta.get_data_type()));
 
     auto scalar_array = data_array->mutable_scalars();
     switch (data_type) {
@@ -400,7 +400,7 @@ CreateScalarDataArrayFrom(const void* data_raw,
             auto data = reinterpret_cast<const ScalarArray*>(data_raw);
             auto obj = scalar_array->mutable_array_data();
             obj->set_element_type(static_cast<milvus::proto::schema::DataType>(
-                field_meta.get_element_type()));
+                                          field_meta.get_element_type()));
             for (auto i = 0; i < count; i++) {
                 *(obj->mutable_data()->Add()) = data[i];
             }
@@ -422,7 +422,7 @@ CreateVectorDataArrayFrom(const void* data_raw,
     auto data_array = std::make_unique<DataArray>();
     data_array->set_field_id(field_meta.get_id().get());
     data_array->set_type(static_cast<milvus::proto::schema::DataType>(
-        field_meta.get_data_type()));
+                                 field_meta.get_data_type()));
 
     auto vector_array = data_array->mutable_vectors();
     auto dim = field_meta.get_dim();
@@ -467,17 +467,17 @@ CreateDataArrayFrom(const void* data_raw,
 // TODO remove merge dataArray, instead fill target entity when get data slice
 std::unique_ptr<DataArray>
 MergeDataArray(
-    std::vector<std::pair<milvus::SearchResult*, int64_t>>& result_offsets,
-    const FieldMeta& field_meta) {
+        std::vector<std::pair<milvus::SearchResult*, int64_t>>& result_offsets,
+        const FieldMeta& field_meta) {
     auto data_type = field_meta.get_data_type();
     auto data_array = std::make_unique<DataArray>();
     data_array->set_field_id(field_meta.get_id().get());
     data_array->set_type(static_cast<milvus::proto::schema::DataType>(
-        field_meta.get_data_type()));
+                                 field_meta.get_data_type()));
 
     for (auto& result_pair : result_offsets) {
         auto src_field_data =
-            result_pair.first->output_fields_data_[field_meta.get_id()].get();
+                result_pair.first->output_fields_data_[field_meta.get_id()].get();
         auto src_offset = result_pair.second;
         AssertInfo(data_type == DataType(src_field_data->type()),
                    "merge field data type not consistent");
@@ -492,15 +492,15 @@ MergeDataArray(
                                          data + (src_offset + 1) * dim);
             } else if (field_meta.get_data_type() == DataType::VECTOR_BINARY) {
                 AssertInfo(
-                    dim % 8 == 0,
-                    "Binary vector field dimension is not a multiple of 8");
+                        dim % 8 == 0,
+                        "Binary vector field dimension is not a multiple of 8");
                 auto num_bytes = dim / 8;
                 auto data = VEC_FIELD_DATA(src_field_data, binary);
                 auto obj = vector_array->mutable_binary_vector();
                 obj->assign(data + src_offset * num_bytes, num_bytes);
             } else {
                 PanicInfo(
-                    DataTypeInvalid, "unsupported datatype {}", data_type);
+                        DataTypeInvalid, "unsupported datatype {}", data_type);
             }
             continue;
         }
@@ -555,13 +555,13 @@ MergeDataArray(
                 auto& data = FIELD_DATA(src_field_data, array);
                 auto obj = scalar_array->mutable_array_data();
                 obj->set_element_type(
-                    proto::schema::DataType(field_meta.get_element_type()));
+                        proto::schema::DataType(field_meta.get_element_type()));
                 *(obj->mutable_data()->Add()) = data[src_offset];
                 break;
             }
             default: {
                 PanicInfo(
-                    DataTypeInvalid, "unsupported datatype {}", data_type);
+                        DataTypeInvalid, "unsupported datatype {}", data_type);
             }
         }
     }
@@ -579,7 +579,7 @@ ReverseDataFromIndex(const index::IndexBase* index,
     auto data_array = std::make_unique<DataArray>();
     data_array->set_field_id(field_meta.get_id().get());
     data_array->set_type(static_cast<milvus::proto::schema::DataType>(
-        field_meta.get_data_type()));
+                                 field_meta.get_data_type()));
 
     auto scalar_array = data_array->mutable_scalars();
     switch (data_type) {
@@ -678,6 +678,7 @@ ReverseDataFromIndex(const index::IndexBase* index,
 
     return data_array;
 }
+
 // init segcore storage config first, and create default remote chunk manager
 // segcore use default remote chunk manager to load data from minio/s3
 void
@@ -685,18 +686,19 @@ LoadFieldDatasFromRemote(const std::vector<std::string>& remote_files,
                          storage::FieldDataChannelPtr channel) {
     try {
         auto rcm = storage::RemoteChunkManagerSingleton::GetInstance()
-                       .GetRemoteChunkManager();
+                .GetRemoteChunkManager();
         auto& pool = ThreadPools::GetThreadPool(ThreadPoolPriority::HIGH);
 
         std::vector<std::future<storage::FieldDataPtr>> futures;
         futures.reserve(remote_files.size());
+
         for (const auto& file : remote_files) {
             auto future = pool.Submit([&]() {
-                auto fileSize = rcm->Size(file);
-                auto buf = std::shared_ptr<uint8_t[]>(new uint8_t[fileSize]);
-                rcm->Read(file, buf.get(), fileSize);
-                auto result = storage::DeserializeFileData(buf, fileSize);
-                return result->GetFieldData();
+                   auto fileSize = rcm->Size(file);
+                   auto buf = std::shared_ptr<uint8_t[]>(new uint8_t[fileSize]);
+                   rcm->Read(file, buf.get(), fileSize);
+                   auto result = storage::DeserializeFileData(buf, fileSize);
+                  return result->GetFieldData();
             });
             futures.emplace_back(std::move(future));
         }
