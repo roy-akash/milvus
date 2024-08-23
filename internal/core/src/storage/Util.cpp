@@ -26,6 +26,10 @@
 #include "common/EasyAssert.h"
 #include "common/FieldData.h"
 #include "common/FieldDataInterface.h"
+#include "common/Consts.h"
+#include "fmt/format.h"
+#include "storage/CollectionChunkManager.h"
+#include "log/Log.h"
 #ifdef AZURE_BUILD_DIR
 #include "storage/azure/AzureChunkManager.h"
 #endif
@@ -702,6 +706,10 @@ ReleaseArrowUnused() {
 
 ChunkManagerPtr
 CreateChunkManager(const StorageConfig& storage_config) {
+    if(storage_config.byok_enabled){
+        LOG_SEGCORE_INFO_ << "Initializing a new CollectionChunkManager with BYOK enabled. Configuration details: " << storage_config.ToString();
+        return CollectionChunkManager::GetInstance(storage_config);
+    }
     auto storage_type = ChunkManagerType_Map[storage_config.storage_type];
 
     switch (storage_type) {

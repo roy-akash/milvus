@@ -90,6 +90,7 @@ set(MILVUS_TEST_FILES
         test_chunked_column.cpp
         test_rust_result.cpp
         test_cached_search_iterator.cpp
+        test_collection_chunk_manager.cpp
         test_dpc_cvs_access_manager_client.cpp
         )
 
@@ -179,22 +180,22 @@ add_subdirectory(bench)
 # if (USE_DYNAMIC_SIMD)
 # add_executable(dynamic_simd_test
 #                test_simd.cpp)
-# 
+#
 # target_link_libraries(dynamic_simd_test
 #                 milvus_simd
 #                 milvus_log
 #                 gtest
 #                 ${CONAN_LIBS})
-# 
+#
 # install(TARGETS dynamic_simd_test DESTINATION unittest)
 # endif()
 
-add_executable(bitset_test 
+add_executable(bitset_test
         test_bitset.cpp
 )
-target_link_libraries(bitset_test 
-        milvus_bitset 
-        gtest 
+target_link_libraries(bitset_test
+        milvus_bitset
+        gtest
         ${CONAN_LIBS}
 )
 install(TARGETS bitset_test DESTINATION unittest)

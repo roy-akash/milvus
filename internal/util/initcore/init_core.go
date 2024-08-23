@@ -168,6 +168,7 @@ func InitRemoteChunkManager(params *paramtable.ComponentParam) error {
 		useVirtualHost:      C.bool(params.MinioCfg.UseVirtualHost.GetAsBool()),
 		requestTimeoutMs:    C.int64_t(params.MinioCfg.RequestTimeoutMs.GetAsInt64()),
 		gcp_credential_json: cGcpCredentialJSON,
+		byok_enabled:             C.bool(params.CommonCfg.ByokEnabled.GetAsBool()),
 		useCollectionIdIndexPath: C.bool(params.CommonCfg.UseCollectionIdBasedIndexPath.GetAsBool()),
 	}
 

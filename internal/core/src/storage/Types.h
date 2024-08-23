@@ -105,6 +105,8 @@ struct StorageConfig {
     std::string gcp_credential_json = "";
     bool byok_enabled = false;
     bool useCollectionIdIndexPath = false;
+    std::string session_token = "";
+    std::string kms_key_id = "";
 
     std::string
     ToString() const {
@@ -119,10 +121,10 @@ struct StorageConfig {
            << ", useVirtualHost=" << std::boolalpha << useVirtualHost
            << ", useCollectionIdIndexPath=" << std::boolalpha << useCollectionIdIndexPath
            << ", byok_enabled=" << std::boolalpha << byok_enabled
+           << ", kms_key_id=" << kms_key_id
            << ", requestTimeoutMs=" << requestTimeoutMs
            << ", gcp_native_without_auth=" << std::boolalpha
            << gcp_native_without_auth << "]";
-
         return ss.str();
     }
 };

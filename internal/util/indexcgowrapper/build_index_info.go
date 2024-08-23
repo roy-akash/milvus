@@ -53,6 +53,8 @@ func NewBuildIndexInfo(config *indexpb.StorageConfig) (*BuildIndexInfo, error) {
 	cCloudProvider := C.CString(config.CloudProvider)
 	cSslCACert := C.CString(config.SslCACert)
 	cGcpCredentialJSON := C.CString(config.GcpCredentialJSON)
+	cSessionToken := C.CString(config.SessionToken)
+	cKmsKeyId := C.CString(config.KmsKeyId)
 	defer C.free(unsafe.Pointer(cAddress))
 	defer C.free(unsafe.Pointer(cBucketName))
 	defer C.free(unsafe.Pointer(cAccessKey))
@@ -64,6 +66,8 @@ func NewBuildIndexInfo(config *indexpb.StorageConfig) (*BuildIndexInfo, error) {
 	defer C.free(unsafe.Pointer(cCloudProvider))
 	defer C.free(unsafe.Pointer(cSslCACert))
 	defer C.free(unsafe.Pointer(cGcpCredentialJSON))
+	defer C.free(unsafe.Pointer(cSessionToken))
+	defer C.free(unsafe.Pointer(cKmsKeyId))
 	storageConfig := C.CStorageConfig{
 		address:                  cAddress,
 		bucket_name:              cBucketName,
@@ -82,6 +86,8 @@ func NewBuildIndexInfo(config *indexpb.StorageConfig) (*BuildIndexInfo, error) {
 		gcp_credential_json:      cGcpCredentialJSON,
 		byok_enabled:             C.bool(config.ByokEnabled),
 		useCollectionIdIndexPath: C.bool(config.UseCollectionIdIndexPath),
+		session_token:    cSessionToken,
+		kms_key_id:       cKmsKeyId,
 	}
 
 	status := C.NewBuildIndexInfo(&cBuildIndexInfo, storageConfig)

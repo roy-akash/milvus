@@ -96,6 +96,8 @@ typedef struct CStorageConfig {
     const char* gcp_credential_json;
     bool useCollectionIdIndexPath;
     bool byok_enabled;
+    const char* session_token;
+    const char* kms_key_id;
 } CStorageConfig;
 
 typedef struct CMmapConfig {
