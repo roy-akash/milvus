@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Skip the installation and compilation of third-party code, 
+# Skip the installation and compilation of third-party code,
 # if the developer is certain that it has already been done.
 if [[ ${SKIP_3RDPARTY} -eq 1 ]]; then
   exit 0
@@ -54,10 +54,14 @@ export CXXFLAGS="-Wno-error=address -Wno-error=deprecated-declarations"
 export CFLAGS="-Wno-error=address -Wno-error=deprecated-declarations"
 
 # Determine the Conan remote URL, using the environment variable if set, otherwise defaulting
-CONAN_ARTIFACTORY_URL="${CONAN_ARTIFACTORY_URL:-https://milvus01.jfrog.io/artifactory/api/conan/default-conan-local}"
+#CONAN_ARTIFACTORY_URL="${CONAN_ARTIFACTORY_URL:-https://milvus01.jfrog.io/artifactory/api/conan/default-conan-local}"
+#
+#if [[ ! `conan remote list` == *default-conan-local* ]]; then
+#    conan remote add default-conan-local $CONAN_ARTIFACTORY_URL
 
-if [[ ! `conan remote list` == *default-conan-local* ]]; then
-    conan remote add default-conan-local $CONAN_ARTIFACTORY_URL
+# Remove default conancenter, as connectivity is restricted from within SFCI pipeline
+if [[ `conan remote list` == *conancenter* ]]; then
+    conan remote remove conancenter
 fi
 
 unameOut="$(uname -s)"

@@ -1,0 +1,44 @@
+global:
+  jenkins-environment: true
+  email-reply-to: cdpfabric@salesforce.com
+  notifications:
+    on_production_branches_only: true
+    slack-channels:
+      - cdp-fabric-dpc-github-notifications
+  production-branches:
+    - '2.3'
+  timeout: 60
+stages:
+  precheck:
+    - work-item-and-reviewer:
+        required: true
+  build:
+    - step:
+        name: Make_Install
+        image: docker.repo.local.sfdc.net/sfci/a360/milvus-sfci-docker:13
+        user: 'root'
+        workspace-mount-point: /tmp/project
+        commands:
+          - export PATH=$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/lib/golang/bin:/go/bin
+          - echo $PATH
+          - which go
+          - which conan
+          - conan remote list
+          - conan user
+          - conan search folly
+          - conan search folly -r all
+          - which cmake
+          - cmake --version
+          - make install
+  package:
+    - docker-build:
+        images:
+          - image-name: dpc-milvus
+            dockerfile: ./build/docker/milvus/sfci/Dockerfile
+            build-context: /cix/src
+  integration-test:
+    - sonarqube:
+        workspace-mount-point: /tmp/project
+        enabled: false
+  publish:
+    - docker-push
