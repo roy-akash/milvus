@@ -58,6 +58,7 @@ set(MILVUS_TEST_FILES
         test_chunk_cache.cpp
         test_storage.cpp
         test_binlog_index.cpp
+        test_dpc_cvs_access_manager_client.cpp
         )
 
 if ( BUILD_DISK_ANN STREQUAL "ON" )
@@ -126,6 +127,7 @@ target_link_libraries(all_tests
         milvus_storage
         milvus_indexbuilder
         pthread
+        dpccvsaccessmanager
         )
 
 install(TARGETS all_tests DESTINATION unittest)
