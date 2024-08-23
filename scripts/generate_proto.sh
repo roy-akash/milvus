@@ -31,6 +31,7 @@ PROTOC_BIN=$ROOT_DIR/cmake_build/bin/protoc
 
 INSTALL_PATH="$1"
 
+PROTOC_GRPC_PLUGIN=$ROOT_DIR/cmake_build/bin/grpc_cpp_plugin
 PROGRAM=$(basename "$0")
 GOPATH=$(go env GOPATH)
 
@@ -95,5 +96,7 @@ ${protoc_opt} --cpp_out=$CPP_SRC_DIR/src/pb clustering.proto|| { echo 'generate 
 ${protoc_opt} --cpp_out=$CPP_SRC_DIR/src/pb index_cgo_msg.proto|| { echo 'generate index_cgo_msg.proto failed'; exit 1; }
 ${protoc_opt} --cpp_out=$CPP_SRC_DIR/src/pb cgo_msg.proto|| { echo 'generate cgo_msg.proto failed'; exit 1; }
 ${protoc_opt} --cpp_out=$CPP_SRC_DIR/src/pb plan.proto|| { echo 'generate plan.proto failed'; exit 1; }
+${protoc_opt} --cpp_out=$CPP_SRC_DIR/src/pb dpc_cvs_access_manager.proto  || { echo 'generate dpc_cvs_access_manager.proto failed'; exit 1; }
+${protoc_opt} --grpc_out=$CPP_SRC_DIR/src/pb dpc_cvs_access_manager.proto --plugin=protoc-gen-grpc=$PROTOC_GRPC_PLUGIN|| { echo 'generate gRPC dpc_cvs_access_manager.proto failed'; exit 1; }
 
 popd

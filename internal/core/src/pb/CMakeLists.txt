@@ -13,3 +13,7 @@ find_package(Protobuf REQUIRED)
 
 add_source_at_current_directory_recursively()
 add_library(milvus_pb OBJECT ${SOURCE_FILES})
+
+add_library(milvus_proto STATIC
+dpc_cvs_access_manager.pb.cc
+dpc_cvs_access_manager.grpc.pb.cc)

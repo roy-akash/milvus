@@ -48,6 +48,7 @@ add_subdirectory( clustering )
 add_subdirectory( exec )
 add_subdirectory( bitset )
 add_subdirectory( futures )
+add_subdirectory( dpccvsaccessmanager )
 
 milvus_add_pkg_config("milvus_core")
 
@@ -68,7 +69,7 @@ add_library(milvus_core SHARED
     $<TARGET_OBJECTS:milvus_futures>
 )
 
-set(LINK_TARGETS 
+set(LINK_TARGETS
     boost_bitset_ext
     simdjson
     tantivy_binding

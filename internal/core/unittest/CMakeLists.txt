@@ -90,6 +90,7 @@ set(MILVUS_TEST_FILES
         test_chunked_column.cpp
         test_rust_result.cpp
         test_cached_search_iterator.cpp
+        test_dpc_cvs_access_manager_client.cpp
         )
 
 if ( INDEX_ENGINE STREQUAL "cardinal" )
@@ -168,6 +169,7 @@ target_link_libraries(all_tests
         gtest
         milvus_core
         knowhere
+        dpccvsaccessmanager
         )
 
 install(TARGETS all_tests DESTINATION unittest)
