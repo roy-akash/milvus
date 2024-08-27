@@ -65,11 +65,11 @@ func (mcm *FabricRemoteChunkManager) MultiWrite(ctx context.Context, kvs map[str
 	for key, value := range kvs {
 		log.Info("Data to be written to ", zap.String("filepath", key))
 		collID, err := mcm.retrieveCollectionIDFromFilepath(key)
-		rcm, err := mcm.getChunkManager(ctx, collID)
+		trcm, err := mcm.getNewChunkManager(ctx, collID)
 
 		// if chunk manager is available
 		if err == nil {
-			err = rcm.Write(ctx, key, value)
+			err = trcm.chunkManager.Write(ctx, key, value)
 		} else {
 			el = merr.Combine(el, errors.Wrapf(err, "failed to get chunkmanager for collection id %s", collID))
 		}
@@ -88,10 +88,10 @@ func (mcm *FabricRemoteChunkManager) Write(ctx context.Context, filePath string,
 
 	var el error
 	collID, err := mcm.retrieveCollectionIDFromFilepath(filePath)
-	rcm, err := mcm.getChunkManager(ctx, collID)
+	trcm, err := mcm.getNewChunkManager(ctx, collID)
 	// if chunk manager is available
 	if err == nil {
-		err = rcm.Write(ctx, filePath, content)
+		err = trcm.chunkManager.Write(ctx, filePath, content)
 	} else {
 		el = merr.Combine(el, errors.Wrapf(err, "failed to get chunkmanager for collection id %s", collID))
 	}
@@ -364,34 +364,45 @@ func (mcm *FabricRemoteChunkManager) upsertChunkManager(ctx context.Context, col
 	// double check to ensure chunk manager is not initialized twice
 	if !mcm.isValidChunkManagerPresent(collID) {
 		log.Info("Initializing chunk manager for collection id : ", zap.Int64("collectionId", collID))
-
-		//TODO add retries
-		accessCredentials, err := accessmanager.GetCredentialsForCollection(
-			ctx,
-			fmt.Sprintf("%d", collID),
-			mcm.config.bucketName,
-		)
-
+		transientChunkManager, err := mcm.getNewChunkManager(ctx, collID)
 		if err != nil {
 			return err
 		}
-
-		// cloned the config to be used for this new chunk manager object
-		newConfig := mcm.config.Clone()
-
-		newConfig.accessKeyID = accessCredentials.AccessKeyID
-		newConfig.secretAccessKeyID = accessCredentials.SecretAccessKey
-		newConfig.sessionToken = accessCredentials.SessionToken
-		newConfig.sseKms = accessCredentials.TenantKeyId
-
-		remoteChunkManager, _ := NewRemoteChunkManager(ctx, newConfig)
-
-		transientChunkManager := &TransientFabricRemoteChunkManager{
-			remoteChunkManager,
-			accessCredentials.ExpirationTimestamp,
-		}
-
 		mcm.chunkManagers[collID] = transientChunkManager
 	}
 	return nil
+}
+
+/*
+This method creates a new chunk manager for the given collection id
+*/
+func (mcm *FabricRemoteChunkManager) getNewChunkManager(ctx context.Context, collID int64) (*TransientFabricRemoteChunkManager, error) {
+
+	log.Debug("Initializing new chunk manager for collection id : ", zap.Int64("collectionId", collID))
+
+	accessCredentials, err := accessmanager.GetCredentialsForCollection(
+		ctx,
+		fmt.Sprintf("%d", collID),
+		mcm.config.bucketName,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// cloned the config to be used for this new chunk manager object
+	newConfig := mcm.config.Clone()
+
+	newConfig.accessKeyID = accessCredentials.AccessKeyID
+	newConfig.secretAccessKeyID = accessCredentials.SecretAccessKey
+	newConfig.sessionToken = accessCredentials.SessionToken
+	newConfig.sseKms = accessCredentials.TenantKeyId
+
+	remoteChunkManager, err := NewRemoteChunkManager(ctx, newConfig)
+
+	transientChunkManager := &TransientFabricRemoteChunkManager{
+		remoteChunkManager,
+		accessCredentials.ExpirationTimestamp,
+	}
+	return transientChunkManager, err
 }
