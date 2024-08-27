@@ -34,7 +34,7 @@ func GetAccessManagerClient(ctx context.Context) types.DpcCvsAccessManagerClient
 }
 
 func GetCredentialsForCollection(ctx context.Context, collectionId string, bucketName string) (*AccessCredentials, error) {
-	instanceName := os.Getenv("MILVUS_INSTANCE_NAME")
+	instanceName := os.Getenv("INSTANCE_NAME")
 
 	log.Debug("Milvus Instance Name from env", zap.String("instanceName", instanceName))
 

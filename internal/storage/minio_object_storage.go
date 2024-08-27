@@ -151,10 +151,12 @@ func newMinioClient(ctx context.Context, c *config) (*minio.Client, error) {
 		}
 		return nil
 	}
-	//TODO add appropriate check in place of bucket existence
-	err = retry.Do(ctx, checkBucketFn, retry.Attempts(0))
-	if err != nil {
-		log.Warn("Error occurred while bucket existence check")
+	if !params.CommonCfg.ByokEnabled.GetAsBool() {
+		err = retry.Do(ctx, checkBucketFn, retry.Attempts(CheckBucketRetryAttempts))
+		if err != nil {
+			log.Warn("Error occurred while bucket existence check")
+			return nil, err
+		}
 	}
 	return minIOClient, nil
 }
