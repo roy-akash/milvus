@@ -46,6 +46,21 @@ func GetCredentialsForCollection(ctx context.Context, collectionId string, bucke
 		WriteAccess:     true,
 	}
 
+	return callAccessManagerAndGetCredentials(ctx, credentialRequest)
+}
+
+func GetGlobalCredentials(ctx context.Context, bucketName string) (*AccessCredentials, error) {
+
+	credentialRequest := &dpccvdpb.GetCredentialsRequest{
+		ApplicationType: dpccvdpb.ApplicationType_MILVUS,
+		BucketName:      bucketName,
+	}
+
+	return callAccessManagerAndGetCredentials(ctx, credentialRequest)
+}
+
+func callAccessManagerAndGetCredentials(ctx context.Context, credentialRequest *dpccvdpb.GetCredentialsRequest) (*AccessCredentials, error) {
+
 	log.Debug("Credential Request to get Credentials : ", zap.Any("credentialRequest", credentialRequest))
 
 	accessManagerClient := GetAccessManagerClient(ctx)
@@ -67,33 +82,5 @@ func GetCredentialsForCollection(ctx context.Context, collectionId string, bucke
 		credentialResponse.GetExpirationTimestamp(),
 		credentialResponse.GetTenantKeyId(),
 	}, nil
-}
 
-func GetGlobalCredentials(ctx context.Context, bucketName string) (*AccessCredentials, error) {
-
-	credentialRequest := &dpccvdpb.GetCredentialsRequest{
-		ApplicationType: dpccvdpb.ApplicationType_MILVUS,
-		BucketName:      bucketName,
-	}
-
-	log.Debug("Global Credential Request to get Credentials : ", zap.Any("credentialRequest", credentialRequest))
-
-	accessManagerClient := GetAccessManagerClient(ctx)
-
-	// Call the GetCredentials method
-	requestStartTime := time.Now().UTC()
-	credentialResponse, err := accessManagerClient.GetCredentials(ctx, credentialRequest)
-	if err != nil {
-		log.Error("Failed to get global credentials: %v", zap.Any("error", err))
-		return nil, err
-	}
-	timeTakenInMilliSeconds := time.Now().UTC().Sub(requestStartTime).Milliseconds()
-	log.Info("Time taken to fetch global credentials", zap.Int64("timeTakenInMilliSeconds", timeTakenInMilliSeconds))
-
-	return &AccessCredentials{
-		AccessKeyID:         credentialResponse.GetAccessKeyId(),
-		SecretAccessKey:     credentialResponse.GetSecretAccessKey(),
-		SessionToken:        credentialResponse.GetSessionToken(),
-		ExpirationTimestamp: credentialResponse.GetExpirationTimestamp(),
-	}, nil
 }
