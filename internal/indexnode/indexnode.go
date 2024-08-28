@@ -115,11 +115,20 @@ func NewIndexNode(ctx context.Context, factory dependency.Factory) *IndexNode {
 	log.Debug("New IndexNode ...")
 	rand.Seed(time.Now().UnixNano())
 	ctx1, cancel := context.WithCancel(ctx)
+
+	var reqFactory StorageFactory
+	if Params.CommonCfg.ByokEnabled.GetAsBool() {
+		log.Info("BYOK is enabled, initializing fabric chunk manager factory")
+		reqFactory = &FabricChunkMgrFactory{}
+	} else {
+		reqFactory = NewChunkMgrFactory()
+	}
+
 	b := &IndexNode{
 		loopCtx:        ctx1,
 		loopCancel:     cancel,
 		factory:        factory,
-		storageFactory: NewChunkMgrFactory(),
+		storageFactory: reqFactory,
 		tasks:          map[taskKey]*taskInfo{},
 		lifetime:       lifetime.NewLifetime(commonpb.StateCode_Abnormal),
 	}
