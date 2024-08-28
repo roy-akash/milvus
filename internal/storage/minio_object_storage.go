@@ -19,6 +19,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"github.com/minio/minio-go/v7/pkg/encrypt"
 	"io"
 	"os"
 	"strings"
@@ -106,7 +107,7 @@ func newMinioClient(ctx context.Context, c *config) (*minio.Client, error) {
 		if c.useIAM {
 			creds = credentials.NewIAM("")
 		} else {
-			creds = credentials.NewStaticV4(c.accessKeyID, c.secretAccessKeyID, "")
+			creds = credentials.NewStaticV4(c.accessKeyID, c.secretAccessKeyID, c.sessionToken)
 		}
 	}
 
@@ -153,9 +154,12 @@ func newMinioClient(ctx context.Context, c *config) (*minio.Client, error) {
 		}
 		return nil
 	}
-	err = retry.Do(ctx, checkBucketFn, retry.Attempts(CheckBucketRetryAttempts))
-	if err != nil {
-		return nil, err
+	if !params.CommonCfg.ByokEnabled.GetAsBool() {
+		err = retry.Do(ctx, checkBucketFn, retry.Attempts(CheckBucketRetryAttempts))
+		if err != nil {
+			log.Warn("Error occurred while bucket existence check")
+			return nil, err
+		}
 	}
 	return minIOClient, nil
 }
@@ -186,6 +190,13 @@ func (minioObjectStorage *MinioObjectStorage) GetObject(ctx context.Context, buc
 
 func (minioObjectStorage *MinioObjectStorage) PutObject(ctx context.Context, bucketName, objectName string, reader io.Reader, objectSize int64) error {
 	_, err := minioObjectStorage.Client.PutObject(ctx, bucketName, objectName, reader, objectSize, minio.PutObjectOptions{})
+	return checkObjectStorageError(objectName, err)
+}
+
+func (minioObjectStorage *MinioObjectStorage) PutObjectWithSseKey(ctx context.Context, bucketName, objectName string, reader io.Reader, objectSize int64, sseKey string) error {
+	log.Debug("Writing data with custom SSE key")
+	encryption, _ := encrypt.NewSSEKMS(sseKey, nil)
+	_, err := minioObjectStorage.Client.PutObject(ctx, bucketName, objectName, reader, objectSize, minio.PutObjectOptions{ServerSideEncryption: encryption})
 	return checkObjectStorageError(objectName, err)
 }
 

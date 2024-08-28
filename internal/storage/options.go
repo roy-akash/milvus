@@ -1,5 +1,10 @@
 package storage
 
+import (
+	"github.com/milvus-io/milvus/pkg/log"
+	"go.uber.org/zap"
+)
+
 // Option for setting params used by chunk manager client.
 type config struct {
 	address              string
@@ -18,10 +23,35 @@ type config struct {
 	requestTimeoutMs     int64
 	gcpCredentialJSON    string
 	gcpNativeWithoutAuth bool // used for Unit Testing
+	sseKms            	 string
+	sessionToken      	 string
 }
 
 func newDefaultConfig() *config {
 	return &config{}
+}
+
+func (c *config) Clone() *config {
+	return &config{
+		address:           c.address,
+		bucketName:        c.bucketName,
+		accessKeyID:       c.accessKeyID,
+		secretAccessKeyID: c.secretAccessKeyID,
+		useSSL:            c.useSSL,
+		sslCACert:         c.sslCACert,
+		createBucket:      c.createBucket,
+		rootPath:          c.rootPath,
+		useIAM:            c.useIAM,
+		cloudProvider:     c.cloudProvider,
+		iamEndpoint:       c.iamEndpoint,
+		useVirtualHost:    c.useVirtualHost,
+		region:            c.region,
+		requestTimeoutMs:  c.requestTimeoutMs,
+		gcpCredentialJSON: c.gcpCredentialJSON,
+		gcpNativeWithoutAuth: c.gcpNativeWithoutAuth, // used for Unit Testing
+		sseKms:            c.sseKms,
+		sessionToken:      c.sessionToken,
+	}
 }
 
 // Option is used to config the retry function.
@@ -70,6 +100,7 @@ func CreateBucket(createBucket bool) Option {
 }
 
 func RootPath(rootPath string) Option {
+	log.Info("rootPath", zap.String("rootPath", rootPath))
 	return func(c *config) {
 		c.rootPath = rootPath
 	}

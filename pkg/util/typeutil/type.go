@@ -52,6 +52,8 @@ const (
 	StreamingCoordRole = "streamingcoord"
 	// StreamingNode is a constant represent StreamingNode
 	StreamingNodeRole = "streamingnode"
+	// AccessManagerRole
+	AccessManagerRole = "accessmanager"
 )
 
 var (
@@ -65,6 +67,7 @@ var (
 		DataCoordRole,
 		DataNodeRole,
 		StreamingNodeRole,
+		AccessManagerRole,
 	)
 	serverTypeList = serverTypeSet.Collect()
 )

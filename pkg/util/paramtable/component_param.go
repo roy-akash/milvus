@@ -101,6 +101,7 @@ type ComponentParam struct {
 	DataCoordGrpcClientCfg      GrpcClientConfig
 	DataNodeGrpcClientCfg       GrpcClientConfig
 	IndexNodeGrpcClientCfg      GrpcClientConfig
+	AccessManagerGrpcClientCfg  GrpcClientConfig
 	StreamingCoordGrpcClientCfg GrpcClientConfig
 	StreamingNodeGrpcClientCfg  GrpcClientConfig
 	IntegrationTestCfg          integrationTestConfig
@@ -162,6 +163,7 @@ func (p *ComponentParam) init(bt *BaseTable) {
 	p.IndexNodeGrpcClientCfg.Init("indexNode", bt)
 	p.StreamingCoordGrpcClientCfg.Init("streamingCoord", bt)
 	p.StreamingNodeGrpcClientCfg.Init("streamingNode", bt)
+	p.AccessManagerGrpcClientCfg.Init("accessManager", bt)
 
 	p.IntegrationTestCfg.init(bt)
 }

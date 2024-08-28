@@ -63,6 +63,7 @@ mkdir -p ./planpb
 mkdir -p ./workerpb
 mkdir -p ./messagespb
 mkdir -p ./streamingpb
+mkdir -p ./dpccvspb
 mkdir -p $ROOT_DIR/cmd/tools/migration/legacy/legacypb
 
 protoc_opt="${PROTOC_BIN} --proto_path=${API_PROTO_DIR} --proto_path=."
@@ -78,6 +79,7 @@ ${protoc_opt} --go_out=paths=source_relative:./datapb --go-grpc_out=require_unim
 ${protoc_opt} --go_out=paths=source_relative:./querypb --go-grpc_out=require_unimplemented_servers=false,paths=source_relative:./querypb query_coord.proto|| { echo 'generate query_coord.proto failed'; exit 1; }
 ${protoc_opt} --go_out=paths=source_relative:./planpb --go-grpc_out=require_unimplemented_servers=false,paths=source_relative:./planpb plan.proto|| { echo 'generate plan.proto failed'; exit 1; }
 ${protoc_opt} --go_out=paths=source_relative:./segcorepb --go-grpc_out=require_unimplemented_servers=false,paths=source_relative:./segcorepb segcore.proto|| { echo 'generate segcore.proto failed'; exit 1; }
+${protoc_opt} --go_out=paths=source_relative:./dpccvspb --go-grpc_out=require_unimplemented_servers=false,paths=source_relative:./dpccvspb dpc_go_cvs_access_manager.proto|| { echo 'generate dpc_go_cvs_access_manager.proto failed'; exit 1; }
 ${protoc_opt} --go_out=paths=source_relative:./clusteringpb --go-grpc_out=require_unimplemented_servers=false,paths=source_relative:./clusteringpb clustering.proto|| { echo 'generate clustering.proto failed'; exit 1; }
 ${protoc_opt} --go_out=paths=source_relative:./messagespb --go-grpc_out=require_unimplemented_servers=false,paths=source_relative:./messagespb messages.proto || { echo 'generate messages.proto failed'; exit 1; }
 ${protoc_opt} --go_out=paths=source_relative:./streamingpb --go-grpc_out=require_unimplemented_servers=false,paths=source_relative:./streamingpb streaming.proto || { echo 'generate streamingpb.proto failed'; exit 1; }
