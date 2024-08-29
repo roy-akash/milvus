@@ -25,7 +25,8 @@ public:
     static std::shared_ptr<ChunkManager> GetChunkManager(
         const int64_t collection_id,
         const std::string& instance_name,
-        bool write_access);
+        bool write_access,
+	bool fetch_from_cache);
     virtual bool
     Exist(const std::string& filepath);
 
@@ -89,6 +90,7 @@ public:
     template <typename ChunkAction, typename... Args>
     static auto ApplyToChunkManager(const std::string& filepath, ChunkAction action, Args&&... args) {
         int64_t collection_id;
+	bool fetch_from_cache = true;
         if (std::is_same_v<ChunkAction, decltype(&ChunkManager::ListWithPrefix)>) {
             // Setting collection_id as -1 for ListWithPrefix.
             // The gRPC client won't set this collection ID while requesting for credentials.
@@ -100,7 +102,11 @@ public:
             std::string_view collection_id_str = GetPartByIndex(filepath, '/', index);
             collection_id = std::stoll(std::string(collection_id_str));
         }
-        auto chunk_manager = GetChunkManager(collection_id, std::getenv("INSTANCE_NAME"), true);
+	// Don't use cache for write flows
+        if constexpr (std::is_same_v<ChunkAction, void (ChunkManager::*)(const std::string&, void*, uint64_t)>) {
+       	    fetch_from_cache = false;
+    	}
+        auto chunk_manager = GetChunkManager(collection_id, std::getenv("INSTANCE_NAME"), true, fetch_from_cache);
         return ((*chunk_manager).*action)(std::forward<Args>(args)...);
     }
 

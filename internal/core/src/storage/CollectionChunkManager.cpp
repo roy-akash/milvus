@@ -135,7 +135,8 @@ CollectionChunkManager::GetPartByIndex(const std::string_view str, char delimite
 std::shared_ptr<ChunkManager> CollectionChunkManager::GetChunkManager(
     const int64_t collection_id,
     const std::string& instance_name,
-    bool write_access) {
+    bool write_access,
+    bool fetch_from_cache) {
     if (!storageConfigTemplate.byok_enabled) {
         LOG_SEGCORE_INFO_ << "BYOK not enabled, using RemoteChunkManagerSingleton.";
         return milvus::storage::RemoteChunkManagerSingleton::GetInstance()
@@ -145,15 +146,16 @@ std::shared_ptr<ChunkManager> CollectionChunkManager::GetChunkManager(
     const std::string& bucket_name = storageConfigTemplate.bucket_name;
     LOG_SEGCORE_INFO_ << "Getting ChunkManager for collection ID: " << collection_id;
 
-    auto cacheObject = chunkManagerMemoryCache.find(collection_id);
-    if (cacheObject != chunkManagerMemoryCache.end()) {
-        //std::lock_guard<std::mutex> lock(client_mutex_);
-        auto [chunk_manager, expiration] = cacheObject->second;
-        if (!IsExpired(expiration)) {
-            LOG_SEGCORE_INFO_ << "Found valid ChunkManager in cache for collection ID: " << collection_id;
-            return chunk_manager;
-        } else {
-            LOG_SEGCORE_INFO_ << "Cached ChunkManager expired for collection ID: " << collection_id;
+    if (fetch_from_cache) {
+        auto cacheObject = chunkManagerMemoryCache.find(collection_id);
+        if (cacheObject != chunkManagerMemoryCache.end()) {
+            auto [chunk_manager, expiration] = cacheObject->second;
+            if (!IsExpired(expiration)) {
+                LOG_SEGCORE_INFO_ << "Found valid ChunkManager in cache for collection ID: " << collection_id;
+                return chunk_manager;
+            } else {
+                LOG_SEGCORE_INFO_ << "Cached ChunkManager expired for collection ID: " << collection_id;
+            }
         }
     }
 
@@ -167,9 +169,11 @@ std::shared_ptr<ChunkManager> CollectionChunkManager::GetChunkManager(
     auto updated_config = GetUpdatedStorageConfig(*credentials);
     LOG_SEGCORE_INFO_ << "Created updated storage config for collection ID: " << collection_id;
     auto chunk_manager = milvus::storage::CreateChunkManager(updated_config);
-    std::chrono::system_clock::time_point expiration = ConvertToChronoTime(credentials->expiration_timestamp());
-    chunkManagerMemoryCache[collection_id] = std::make_tuple(chunk_manager, expiration);
-    LOG_SEGCORE_INFO_ << "Cached new ChunkManager for collection ID: " << collection_id;
+    if (fetch_from_cache) {
+        std::chrono::system_clock::time_point expiration = ConvertToChronoTime(credentials->expiration_timestamp());
+        chunkManagerMemoryCache[collection_id] = std::make_tuple(chunk_manager, expiration);
+        LOG_SEGCORE_INFO_ << "Cached new ChunkManager for collection ID: " << collection_id;
+    }
     return chunk_manager;
 }
 
