@@ -52,188 +52,159 @@ func NewFabricRemoteChunkManager(ctx context.Context, c *config) (*FabricRemoteC
 				RemoteChunkManager:                globalTransientRemoteChunkManager.chunkManager,
 				globalTransientRemoteChunkManager: globalTransientRemoteChunkManager,
 				chunkManagers:                     map[int64]*TransientFabricRemoteChunkManager{},
-				config:                            c}
+				config:                            c,
+			}
 		}
 	}
 	log.Debug("Returning Fabric remote chunk manager")
 	return fabricRemoteChunkManager, nil
 }
 
+func (mcm *FabricRemoteChunkManager) Path(ctx context.Context, filePath string) (string, error) {
+	log.Debug("Path function called for path ", zap.String("filePath", filePath))
+	rcm, err := mcm.getChunkManager(ctx, filePath)
+	if err != nil {
+		return "", err
+	}
+	return rcm.Path(ctx, filePath)
+}
+
+func (mcm *FabricRemoteChunkManager) Size(ctx context.Context, filePath string) (int64, error) {
+	log.Debug("Size function called for path ", zap.String("filePath", filePath))
+	rcm, err := mcm.getChunkManager(ctx, filePath)
+	if err != nil {
+		return 0, err
+	}
+	return rcm.Size(ctx, filePath)
+}
+
+func (mcm *FabricRemoteChunkManager) Exist(ctx context.Context, filePath string) (bool, error) {
+	log.Debug("Exist function called for path ", zap.String("filePath", filePath))
+	rcm, err := mcm.getChunkManager(ctx, filePath)
+	if err != nil {
+		return false, err
+	}
+	return rcm.Exist(ctx, filePath)
+}
+
+func (mcm *FabricRemoteChunkManager) ReadWithPrefix(ctx context.Context, prefix string) ([]string, [][]byte, error) {
+	log.Debug("ReadWithPrefix function called for prefix ", zap.String("prefix", prefix))
+	rcm, err := mcm.getChunkManager(ctx, prefix)
+	if err != nil {
+		return nil, nil, err
+	}
+	return rcm.ReadWithPrefix(ctx, prefix)
+}
+
+func (mcm *FabricRemoteChunkManager) ReadAt(ctx context.Context, filePath string, off int64, length int64) (p []byte, err error) {
+	log.Debug("ReadAt function called for filePath ", zap.String("filePath", filePath))
+	rcm, err := mcm.getChunkManager(ctx, filePath)
+	if err != nil {
+		return nil, err
+	}
+	return rcm.ReadAt(ctx, filePath, off, length)
+}
+
+func (mcm *FabricRemoteChunkManager) MultiRemove(ctx context.Context, keys []string) error {
+	log.Debug("MultiRemove function called for filePath(s) ", zap.Strings("filePath", keys))
+	var el error
+	for _, filePath := range keys {
+		err := mcm.Remove(ctx, filePath)
+		if err != nil {
+			el = merr.Combine(el, errors.Wrapf(err, "failed to remove %s", filePath))
+		}
+	}
+	return el
+}
+
 func (mcm *FabricRemoteChunkManager) MultiWrite(ctx context.Context, kvs map[string][]byte) error {
 	log.Debug("MultiWrite called ")
 	var el error
-	for key, value := range kvs {
-		log.Info("Data to be written to ", zap.String("filepath", key))
-		collID, err := mcm.retrieveCollectionIDFromFilepath(key)
-		rcm, err := mcm.getChunkManager(ctx, collID)
-
-		// if chunk manager is available
-		if err == nil {
-			err = rcm.Write(ctx, key, value)
-		} else {
-			el = merr.Combine(el, errors.Wrapf(err, "failed to get chunkmanager for collection id %s", collID))
-		}
-
-		// if write  operation failed
+	for filePath, value := range kvs {
+		err := mcm.Write(ctx, filePath, value)
 		if err != nil {
-			el = merr.Combine(el, errors.Wrapf(err, "failed to write %s", key))
+			el = merr.Combine(el, errors.Wrapf(err, "failed to write %s", filePath))
 		}
 	}
 	return el
 }
 
 func (mcm *FabricRemoteChunkManager) Write(ctx context.Context, filePath string, content []byte) error {
-
 	log.Debug("Write called for path ", zap.String("filePath", filePath))
-
-	var el error
-	collID, err := mcm.retrieveCollectionIDFromFilepath(filePath)
-	rcm, err := mcm.getChunkManager(ctx, collID)
-	// if chunk manager is available
-	if err == nil {
-		err = rcm.Write(ctx, filePath, content)
-	} else {
-		el = merr.Combine(el, errors.Wrapf(err, "failed to get chunkmanager for collection id %s", collID))
-	}
-
-	// if write  operation failed
+	rcm, err := mcm.getChunkManager(ctx, filePath)
 	if err != nil {
-		el = merr.Combine(el, errors.Wrapf(err, "failed to write %s", filePath))
+		return err
 	}
-
-	return el
+	return rcm.Write(ctx, filePath, content)
 }
 
 func (mcm *FabricRemoteChunkManager) Read(ctx context.Context, filePath string) ([]byte, error) {
-
 	log.Debug("Read called for path ", zap.String("filePath", filePath))
-
-	var el error
-	log.Info("Data to be read from ", zap.String("filepath", filePath))
-	collID, err := mcm.retrieveCollectionIDFromFilepath(filePath)
-	rcm, err := mcm.getChunkManager(ctx, collID)
-
-	var objectValue []byte
-	// if chunk manager is available
-	if err == nil {
-		objectValue, err = rcm.Read(ctx, filePath)
-	} else {
-		el = merr.Combine(el, errors.Wrapf(err, "failed to get chunkmanager for collection id %s", collID))
-	}
-
-	// if read  operation failed
+	rcm, err := mcm.getChunkManager(ctx, filePath)
 	if err != nil {
-		el = merr.Combine(el, errors.Wrapf(err, "failed to read %s", filePath))
+		return nil, err
 	}
-
-	return objectValue, el
+	return rcm.Read(ctx, filePath)
 }
 
 func (mcm *FabricRemoteChunkManager) MultiRead(ctx context.Context, keys []string) ([][]byte, error) {
-
-	log.Debug("MultiRead called for path ", zap.Strings("keys", keys))
-
+	log.Debug("MultiRead called ")
 	var el error
-	var objectsValues [][]byte
-	for _, key := range keys {
-		log.Info("Data to be written to ", zap.String("filepath", key))
-		collID, err := mcm.retrieveCollectionIDFromFilepath(key)
-		rcm, err := mcm.getChunkManager(ctx, collID)
-
+	objectsValues := make([][]byte, 0, len(keys))
+	for _, filePath := range keys {
+		log.Info("Data to be written to ", zap.String("filePath", filePath))
 		var objectValue []byte
-		// if chunk manager is available
-		if err == nil {
-			objectValue, err = rcm.Read(ctx, key)
-		} else {
-			el = merr.Combine(el, errors.Wrapf(err, "failed to get chunkmanager for collection id %s", collID))
-		}
-
-		// if read operation failed
+		objectValue, err := mcm.Read(ctx, filePath)
 		if err != nil {
-			el = merr.Combine(el, errors.Wrapf(err, "failed to read %s", key))
+			el = merr.Combine(el, errors.Wrapf(err, "failed to read filePath:%s", filePath))
+		} else {
+			objectsValues = append(objectsValues, objectValue)
 		}
-		objectsValues = append(objectsValues, objectValue)
 	}
 
 	return objectsValues, el
 }
 
-func (mcm *FabricRemoteChunkManager) retrieveCollectionIDFromFilepath(key string) (int64, error) {
-	collectionIdIndex := strings.Count(params.MinioCfg.RootPath.GetValue(), "/") + 2
-	log.Info("collection id index", zap.Int("collectionIdIndex", collectionIdIndex))
-	collId, err := strconv.ParseInt(strings.Split(key, "/")[collectionIdIndex], 10, 64)
-	if err != nil {
-		log.Error("error occurred while trying to derive collection id", zap.String("key", key))
-	}
-	return collId, err
-}
-
 // Remove deletes an object with @key.
 func (mcm *FabricRemoteChunkManager) Remove(ctx context.Context, filePath string) error {
 	log.Debug("Remove called for path ", zap.String("filePath", filePath))
-
-	var el error
-	collID, err := mcm.retrieveCollectionIDFromFilepath(filePath)
-	rcm, err := mcm.getChunkManager(ctx, collID)
-
-	// if chunk manager is available
-	if err == nil {
-		err = rcm.Remove(ctx, filePath)
-	} else {
-		el = merr.Combine(el, errors.Wrapf(err, "failed to get chunkmanager for collection id %s", collID))
-	}
-
-	// if operation failed
+	rcm, err := mcm.getChunkManager(ctx, filePath)
 	if err != nil {
-		el = merr.Combine(el, errors.Wrapf(err, "failed to remove filePath %s", filePath))
+		return err
 	}
-	return el
+	return rcm.Remove(ctx, filePath)
 }
 
 // RemoveWithPrefix removes all objects with the same prefix @prefix from minio.
 func (mcm *FabricRemoteChunkManager) RemoveWithPrefix(ctx context.Context, prefix string) error {
-
 	log.Debug("RemoveWithPrefix called for path ", zap.String("prefix", prefix))
-
-	var el error
-	collID, err := mcm.retrieveCollectionIDFromFilepath(prefix)
-	rcm, err := mcm.getChunkManager(ctx, collID)
-
-	// if chunk manager is available
-	if err == nil {
-		err = rcm.RemoveWithPrefix(ctx, prefix)
-	} else {
-		el = merr.Combine(el, errors.Wrapf(err, "failed to get chunkmanager for collection id %s to perform RemoveWithPrefix", collID))
-	}
-
-	// if operation failed
+	rcm, err := mcm.getChunkManager(ctx, prefix)
 	if err != nil {
-		el = merr.Combine(el, errors.Wrapf(err, "failed to execute RemoveWithPrefix for prefix %s", prefix))
+		return err
 	}
-	return el
+	return rcm.RemoveWithPrefix(ctx, prefix)
 }
 
 func (mcm *FabricRemoteChunkManager) ListWithPrefix(ctx context.Context, prefix string, recursive bool) ([]string, []time.Time, error) {
 	log.Debug("ListWithPrefix called for path ", zap.String("prefix", prefix))
-	var el error
+
 	//always use global chunk manager
 	gcm, err := mcm.getGlobalChunkManager(ctx)
-
-	var objectList []string
-	var times []time.Time
-	// if global chunk manager is available
-	if err == nil {
-		objectList, times, err = gcm.chunkManager.ListWithPrefix(ctx, prefix, recursive)
-	} else {
-		el = merr.Combine(el, errors.Wrapf(err, "failed to get global chunkmanager "))
-	}
-
-	// if listWithPrefix operation failed
 	if err != nil {
-		el = merr.Combine(el, errors.Wrapf(err, "failed to perform list with prefix %s", prefix))
+		return nil, nil, err
 	}
+	return gcm.chunkManager.ListWithPrefix(ctx, prefix, recursive)
+}
 
-	return objectList, times, el
+func (mcm *FabricRemoteChunkManager) retrieveCollectionIDFromFilepath(filePath string) (int64, error) {
+	log.Info("Retrieving collection id from filePath.", zap.String("filePath", "filePath"))
+	collectionIdIndex := strings.Count(params.MinioCfg.RootPath.GetValue(), "/") + 2
+	log.Info("collection id index", zap.Int("collectionIdIndex", collectionIdIndex))
+	collId, err := strconv.ParseInt(strings.Split(filePath, "/")[collectionIdIndex], 10, 64)
+	if err != nil {
+		log.Error("error occurred while trying to derive collection id", zap.String("filePath", filePath), zap.Error(err))
+	}
+	return collId, err
 }
 
 func upsertGlobalChunkManager(ctx context.Context, c *config) (*TransientFabricRemoteChunkManager, error) {
@@ -285,16 +256,18 @@ func (mcm *FabricRemoteChunkManager) getGlobalChunkManager(ctx context.Context) 
 	return mcm.globalTransientRemoteChunkManager, nil
 }
 
-func (mcm *FabricRemoteChunkManager) getChunkManager(ctx context.Context, collID int64) (*RemoteChunkManager, error) {
+func (mcm *FabricRemoteChunkManager) getChunkManager(ctx context.Context, filePath string) (*RemoteChunkManager, error) {
+	collID, err := mcm.retrieveCollectionIDFromFilepath(filePath)
+	if err != nil {
+		return nil, err
+	}
 	log.Info("getting chunk manager for collection id", zap.Int64("collID", collID))
-	var err error
 	if !mcm.isValidChunkManagerPresent(collID) {
 		err = mcm.upsertChunkManager(ctx, collID)
 	}
 	if err != nil {
 		log.Error("Error while loading chunk manager for collection id", zap.Int64("collectionId", collID))
-		// TODO decide to return chunk manager with stale credentials if present
-		return nil, err
+		return nil, errors.Wrapf(err, "Error while loading chunk manager for collection id %s", collID)
 	}
 	return mcm.chunkManagers[collID].chunkManager, nil
 }
@@ -335,7 +308,7 @@ func (mcm *FabricRemoteChunkManager) isChunkManagerExpired(transientChunkManager
 
 	remainingValidity := expirationTime.Sub(currentTime)
 
-	log.Debug("chunkManager expiration details",
+	log.Debug("ChunkManager expiration details",
 		zap.Float64("credentialsRefreshThreshold", credentialsRefreshThreshold),
 		zap.Time("currentTime", currentTime),
 		zap.Time("expirationTime", expirationTime),
