@@ -89,26 +89,24 @@ public:
 
     static std::string_view GetPartByIndex(const std::string_view str, char delimiter, int index);
     template <typename ChunkAction, typename... Args>
-    static auto ApplyToChunkManager(const std::string& filepath, ChunkAction action, Args&&... args) {
+    static auto ApplyToChunkManager(const std::string& root_path, ChunkAction action, Args&&... args) {
         int64_t collection_id;
-	bool fetch_from_cache = true;
+        bool fetch_from_cache = true;
         if (std::is_same_v<ChunkAction, decltype(&ChunkManager::ListWithPrefix)>) {
             // Setting collection_id as -1 for ListWithPrefix.
             // The gRPC client won't set this collection ID while requesting for credentials.
             // That would fetch global credentials for ListWithPrefix.
             collection_id = -1;
         } else {
-            int numberOfSlashes = std::count(filepath.begin(), filepath.end(), '/');
-            LOG_SEGCORE_ERROR_ << "numberOfSlashes:" << numberOfSlashes;
-            int index = numberOfSlashes + 2;
-            LOG_SEGCORE_ERROR_ << "index:" << index;
-            std::string_view collection_id_str = GetPartByIndex(filepath, '/', 3);
+            int number_of_slashes = std::count(root_path.begin(), root_path.end(), '/');
+            int index = number_of_slashes + 2;
+            std::string_view collection_id_str = GetPartByIndex(root_path, '/', index);
             collection_id = std::stoll(std::string(collection_id_str));
         }
 	// Don't use cache for write flows
         if constexpr (std::is_same_v<ChunkAction, void (ChunkManager::*)(const std::string&, void*, uint64_t)>) {
-       	    fetch_from_cache = false;
-    	}
+            fetch_from_cache = false;
+        }
         auto chunk_manager = GetChunkManager(collection_id, std::getenv("INSTANCE_NAME"), true, fetch_from_cache);
         return ((*chunk_manager).*action)(std::forward<Args>(args)...);
     }

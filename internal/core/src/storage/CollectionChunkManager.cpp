@@ -178,29 +178,29 @@ std::shared_ptr<ChunkManager> CollectionChunkManager::GetChunkManager(
 }
 
 uint64_t CollectionChunkManager::Size(const std::string& filepath) {
-    return ApplyToChunkManager(filepath, &ChunkManager::Size, filepath);
+    return ApplyToChunkManager(remote_root_path_, &ChunkManager::Size, filepath);
 }
 
 bool CollectionChunkManager::Exist(const std::string& filepath) {
-    return ApplyToChunkManager(filepath, &ChunkManager::Exist, filepath);
+    return ApplyToChunkManager(remote_root_path_, &ChunkManager::Exist, filepath);
 }
 
 void CollectionChunkManager::Remove(const std::string& filepath) {
-    ApplyToChunkManager(filepath, &ChunkManager::Remove, filepath);
+    ApplyToChunkManager(remote_root_path_, &ChunkManager::Remove, filepath);
 }
 
 std::vector<std::string> CollectionChunkManager::ListWithPrefix(const std::string& filepath) {
-    return ApplyToChunkManager(filepath, &ChunkManager::ListWithPrefix, filepath);
+    return ApplyToChunkManager(remote_root_path_, &ChunkManager::ListWithPrefix, filepath);
 }
 
 uint64_t CollectionChunkManager::Read(const std::string& filepath, void* buf, uint64_t size) {
     using ReadFuncType = uint64_t (ChunkManager::*)(const std::string&, void*, uint64_t);
-    return ApplyToChunkManager(filepath, static_cast<ReadFuncType>(&ChunkManager::Read), filepath, buf, size);
+    return ApplyToChunkManager(remote_root_path_, static_cast<ReadFuncType>(&ChunkManager::Read), filepath, buf, size);
 }
 
 void CollectionChunkManager::Write(const std::string& filepath, void* buf, uint64_t size) {
     using WriteFuncType = void (ChunkManager::*)(const std::string&, void*, uint64_t);
-    ApplyToChunkManager(filepath, static_cast<WriteFuncType>(&ChunkManager::Write), filepath, buf, size);
+    ApplyToChunkManager(remote_root_path_, static_cast<WriteFuncType>(&ChunkManager::Write), filepath, buf, size);
 }
 
 } // namespace milvus::storage
