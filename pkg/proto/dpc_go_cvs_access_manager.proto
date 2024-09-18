@@ -20,6 +20,8 @@ message GetCredentialsRequest {
   string instance_name = 3;
   string bucket_name = 4;
   bool write_access = 5;
+  string collection_name = 6;
+  bool force_update = 7;
 }
 
 message GetCredentialsResponse {

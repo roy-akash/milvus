@@ -19,7 +19,6 @@ package rootcoord
 import (
 	"context"
 	"fmt"
-
 	"github.com/cockroachdb/errors"
 	"go.uber.org/zap"
 

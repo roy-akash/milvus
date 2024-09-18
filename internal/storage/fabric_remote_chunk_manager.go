@@ -341,8 +341,10 @@ func (mcm *FabricRemoteChunkManager) upsertChunkManager(ctx context.Context, col
 		//TODO add retries
 		accessCredentials, err := accessmanager.GetCredentialsForCollection(
 			ctx,
+			"",
 			fmt.Sprintf("%d", collID),
 			mcm.config.bucketName,
+			false,
 		)
 
 		if err != nil {

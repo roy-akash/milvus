@@ -11,6 +11,7 @@
 #include "pb/dpc_cvs_access_manager.pb.h"
 #include "pb/dpc_cvs_access_manager.grpc.pb.h"
 #include "dpccvsaccessmanager/DpcCvsAccessManagerClient.h"
+#include "log/Log.h"
 
 namespace milvus::storage {
 
@@ -98,8 +99,10 @@ public:
             collection_id = -1;
         } else {
             int numberOfSlashes = std::count(filepath.begin(), filepath.end(), '/');
+            LOG_SEGCORE_ERROR_ << "numberOfSlashes:" << numberOfSlashes;
             int index = numberOfSlashes + 2;
-            std::string_view collection_id_str = GetPartByIndex(filepath, '/', index);
+            LOG_SEGCORE_ERROR_ << "index:" << index;
+            std::string_view collection_id_str = GetPartByIndex(filepath, '/', 3);
             collection_id = std::stoll(std::string(collection_id_str));
         }
 	// Don't use cache for write flows

@@ -135,7 +135,11 @@ func NewServer(ctx context.Context, factory dependency.Factory) (*Server, error)
 	}
 	s.setClient()
 	var err error
-	s.rootCoord, err = rootcoord.NewCore(s.ctx, factory)
+	if paramtable.Get().CommonCfg.ByokEnabled.GetAsBool() {
+		s.rootCoord, err = rootcoord.NewFabricCore(s.ctx, factory)
+	} else {
+		s.rootCoord, err = rootcoord.NewCore(s.ctx, factory)
+	}
 	if err != nil {
 		return nil, err
 	}
