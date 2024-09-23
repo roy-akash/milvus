@@ -55,28 +55,39 @@ salesforce::cdp::dpccvsaccessmanager::v1::GetCredentialsResponse DpcCvsAccessMan
 
     LOG_SEGCORE_INFO_ << "Sending gRPC request to GetCredentials." << std::flush;
 
-    try {
-        grpc::Status status = stub_->GetCredentials(&context, request, &response);
+    const int max_retries = 3;
+    int attempt = 0;
+    grpc::Status status;
 
-        if (status.ok()) {
-            LOG_SEGCORE_INFO_ << "Received response from GetCredentials.";
-            LOG_SEGCORE_INFO_ << "Response - Access Key ID: " << response.access_key_id()
-                              << ", Secret Access Key: [REDACTED]"
-                              << ", Session Token: [REDACTED]"
-                              << ", Expiration: " << response.expiration_timestamp();
-            return response;
-        } else {
-            LOG_SEGCORE_ERROR_ << "gRPC call failed with error: " << status.error_message()
-                               << ", error code: " << status.error_code();
-            throw std::runtime_error("gRPC call failed: " + status.error_message());
+    while (attempt < max_retries) {
+        try {
+            status = stub_->GetCredentials(&context, request, &response);
+
+            if (status.ok()) {
+                LOG_SEGCORE_INFO_ << "Received response from GetCredentials.";
+                LOG_SEGCORE_INFO_ << "Response - Access Key ID: " << response.access_key_id()
+                                  << ", Secret Access Key: [REDACTED]"
+                                  << ", Session Token: [REDACTED]"
+                                  << ", Expiration: " << response.expiration_timestamp();
+                return response;
+            } else {
+                LOG_SEGCORE_ERROR_ << "gRPC call failed with error: " << status.error_message()
+                                   << ", error code: " << status.error_code();
+            }
+        } catch (const std::exception& e) {
+            LOG_SEGCORE_ERROR_ << "Exception during gRPC call: " << e.what();
+        } catch (...) {
+            LOG_SEGCORE_ERROR_ << "Unknown exception during gRPC call.";
         }
-    } catch (const std::exception& e) {
-        LOG_SEGCORE_ERROR_ << "Exception during gRPC call: " << e.what();
-        throw;
-    } catch (...) {
-        LOG_SEGCORE_ERROR_ << "Unknown exception during gRPC call.";
-        throw;
+
+        ++attempt;
+        if (attempt < max_retries) {
+            LOG_SEGCORE_INFO_ << "Retrying GetCredentials (" << attempt << "/" << max_retries << ") after a delay.";
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
     }
+
+    throw std::runtime_error("gRPC call failed after " + std::to_string(max_retries) + " attempts: " + status.error_message());
 }
 
 } // namespace milvus::dpccvsaccessmanager

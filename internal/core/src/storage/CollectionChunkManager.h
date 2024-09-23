@@ -99,16 +99,31 @@ public:
             collection_id = -1;
         } else {
             int number_of_slashes = std::count(root_path.begin(), root_path.end(), '/');
+			const auto& file_path = std::get<0>(std::forward_as_tuple(args...));
             int index = number_of_slashes + 2;
-            std::string_view collection_id_str = GetPartByIndex(root_path, '/', index);
+            std::string_view collection_id_str = GetPartByIndex(file_path, '/', index);
             collection_id = std::stoll(std::string(collection_id_str));
+ 	    LOG_SEGCORE_INFO_ << "GetPartByIndex: number_of_slashes: " << number_of_slashes
+                  << ", index: " << index
+                  << ", root_path: " << root_path
+                  << ", file_path: " << file_path
+                  << ", collection_id_str: " << collection_id_str;
         }
 	// Don't use cache for write flows
         if constexpr (std::is_same_v<ChunkAction, void (ChunkManager::*)(const std::string&, void*, uint64_t)>) {
             fetch_from_cache = false;
         }
         auto chunk_manager = GetChunkManager(collection_id, std::getenv("INSTANCE_NAME"), true, fetch_from_cache);
-        return ((*chunk_manager).*action)(std::forward<Args>(args)...);
+    if (!chunk_manager) {
+        LOG_SEGCORE_ERROR_ << "Failed to retrieve ChunkManager for collection ID: " << collection_id;
+        using ReturnType = decltype((std::declval<ChunkManager*>()->*action)(std::forward<Args>(args)...));
+        if constexpr (std::is_same_v<ReturnType, void>) {
+            return;
+        } else {
+            return ReturnType{};
+        }
+    }
+    return ((*chunk_manager).*action)(std::forward<Args>(args)...);
     }
 
 private:
