@@ -109,6 +109,7 @@ std::chrono::system_clock::time_point CollectionChunkManager::ConvertToChronoTim
 
 std::string_view
 CollectionChunkManager::GetPartByIndex(const std::string_view str, char delimiter, int index) {
+    LOG_SEGCORE_INFO_ << "GetPartByIndex called for path" << std::string(str) ;
     size_t start = 0;
     size_t end = str.find(delimiter);
 
@@ -178,27 +179,33 @@ std::shared_ptr<ChunkManager> CollectionChunkManager::GetChunkManager(
 }
 
 uint64_t CollectionChunkManager::Size(const std::string& filepath) {
+    LOG_SEGCORE_INFO_ << "CustomOp Getting Size for filePath: " << filepath;
     return ApplyToChunkManager(remote_root_path_, &ChunkManager::Size, filepath);
 }
 
 bool CollectionChunkManager::Exist(const std::string& filepath) {
+    LOG_SEGCORE_INFO_ << "CustomOp calling Exist for filePath: " << filepath;
     return ApplyToChunkManager(remote_root_path_, &ChunkManager::Exist, filepath);
 }
 
 void CollectionChunkManager::Remove(const std::string& filepath) {
+    LOG_SEGCORE_INFO_ << "CustomOp calling Remove for filePath: " << filepath;
     ApplyToChunkManager(remote_root_path_, &ChunkManager::Remove, filepath);
 }
 
 std::vector<std::string> CollectionChunkManager::ListWithPrefix(const std::string& filepath) {
+    LOG_SEGCORE_INFO_ << "CustomOp calling ListWithPrefix for filePath: " << filepath;
     return ApplyToChunkManager(remote_root_path_, &ChunkManager::ListWithPrefix, filepath);
 }
 
 uint64_t CollectionChunkManager::Read(const std::string& filepath, void* buf, uint64_t size) {
+    LOG_SEGCORE_INFO_ << "CustomOp reading from filePath: " << filepath;
     using ReadFuncType = uint64_t (ChunkManager::*)(const std::string&, void*, uint64_t);
     return ApplyToChunkManager(remote_root_path_, static_cast<ReadFuncType>(&ChunkManager::Read), filepath, buf, size);
 }
 
 void CollectionChunkManager::Write(const std::string& filepath, void* buf, uint64_t size) {
+    LOG_SEGCORE_INFO_ << "CustomOp writing to filePath: " << filepath;
     using WriteFuncType = void (ChunkManager::*)(const std::string&, void*, uint64_t);
     ApplyToChunkManager(remote_root_path_, static_cast<WriteFuncType>(&ChunkManager::Write), filepath, buf, size);
 }
