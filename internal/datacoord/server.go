@@ -714,7 +714,13 @@ func (s *Server) initIndexNodeManager() {
 func (s *Server) initCompaction() {
 	s.compactionHandler = newCompactionPlanHandler(s.cluster, s.sessionManager, s.meta, s.allocator, s.taskScheduler, s.handler)
 	s.compactionTriggerManager = NewCompactionTriggerManager(s.allocator, s.handler, s.compactionHandler, s.meta)
-	s.compactionTrigger = newCompactionTrigger(s.meta, s.compactionHandler, s.allocator, s.handler, s.indexEngineVersionManager)
+
+	compactionTrigger := newCompactionTrigger(s.meta, s.compactionHandler, s.allocator, s.handler, s.indexEngineVersionManager)
+	if paramtable.Get().CommonCfg.ByokEnabled.GetAsBool() {
+		s.compactionTrigger = newFabricCompactionTrigger(compactionTrigger)
+	} else {
+		s.compactionTrigger = compactionTrigger
+	}
 }
 
 func (s *Server) stopCompaction() {
