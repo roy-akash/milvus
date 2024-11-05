@@ -7,7 +7,7 @@ global:
       - cdp-fabric-dpc-github-notifications
   production-branches:
     - '2.3'
-    - '2.3_dev': 2.3.$$GIT_COMMIT
+    - '2.3_dev': 2.3.$$BUILD_NUMBER
   timeout: 60
 stages:
   precheck:
