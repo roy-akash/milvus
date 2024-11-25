@@ -46,7 +46,6 @@ salesforce::cdp::dpccvsaccessmanager::v1::GetCredentialsResponse DpcCvsAccessMan
                       << ", Write Access: " << (request.write_access() ? "true" : "false");
 
     salesforce::cdp::dpccvsaccessmanager::v1::GetCredentialsResponse response;
-    grpc::ClientContext context;
 
     if (!stub_) {
         LOG_SEGCORE_ERROR_ << "Stub is not initialized.";
@@ -60,6 +59,8 @@ salesforce::cdp::dpccvsaccessmanager::v1::GetCredentialsResponse DpcCvsAccessMan
     grpc::Status status;
 
     while (attempt < max_retries) {
+        grpc::ClientContext context;
+
         try {
             status = stub_->GetCredentials(&context, request, &response);
 
@@ -82,8 +83,9 @@ salesforce::cdp::dpccvsaccessmanager::v1::GetCredentialsResponse DpcCvsAccessMan
 
         ++attempt;
         if (attempt < max_retries) {
-            LOG_SEGCORE_INFO_ << "Retrying GetCredentials (" << attempt << "/" << max_retries << ") after a delay.";
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            auto delay = std::chrono::seconds(1 << attempt);
+            LOG_SEGCORE_INFO_ << "Retrying GetCredentials (" << attempt << "/" << max_retries << ") after a delay of " << delay.count() << " seconds.";
+            std::this_thread::sleep_for(delay);
         }
     }
 
