@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"github.com/aliyun/credentials-go/credentials/utils"
 	"github.com/cockroachdb/errors"
 	"github.com/milvus-io/milvus/internal/accessmanager"
 	"github.com/milvus-io/milvus/pkg/log"
@@ -130,14 +131,36 @@ func (mcm *FabricRemoteChunkManager) MultiWrite(ctx context.Context, kvs map[str
 }
 
 func (mcm *FabricRemoteChunkManager) Write(ctx context.Context, filePath string, content []byte) error {
-	log.Debug("Write called for path ", zap.String("filePath", filePath))
 
+	uuid := utils.GetUUID()
+
+	log.Debug("Write called for path ", zap.String("filePath", filePath), zap.String("uuid", uuid))
+	requestStartTime := time.Now().UTC()
 	collID, err := mcm.retrieveCollectionIDFromFilepath(filePath)
 	trcm, err := mcm.getNewChunkManager(ctx, collID)
+
+	chunkManagerCreationTime := time.Now().UTC()
+	timeTakenToCreateNewChunkManager := chunkManagerCreationTime.Sub(requestStartTime).Milliseconds()
+	log.Info("Time taken to get new chunkManager", zap.Int64("timeTakenToCreateNewChunkManager",
+		timeTakenToCreateNewChunkManager), zap.String("uuid", uuid))
+
 	if err != nil {
 		return err
 	}
-	return trcm.chunkManager.Write(ctx, filePath, content)
+	writeErr := trcm.chunkManager.Write(ctx, filePath, content)
+	if writeErr == nil {
+		timeTakenInMilliSecondsToJustWrite := time.Now().UTC().Sub(chunkManagerCreationTime).Milliseconds()
+		timeTakenInMilliSecondsForCompleteWrite := time.Now().UTC().Sub(requestStartTime).Milliseconds()
+		log.Info("Time taken to write",
+			zap.Int64("timeTakenInMilliSecondsToJustWrite", timeTakenInMilliSecondsToJustWrite),
+			zap.Int64("timeTakenInMilliSecondsForCompleteWrite", timeTakenInMilliSecondsForCompleteWrite),
+			zap.Int64("timeTakenToCreateNewChunkManager", timeTakenToCreateNewChunkManager),
+			zap.String("uuid", uuid))
+	} else {
+		log.Error("Failed to write path ", zap.String("filePath", filePath), zap.String("uuid", uuid))
+	}
+
+	return writeErr
 }
 
 func (mcm *FabricRemoteChunkManager) Read(ctx context.Context, filePath string) ([]byte, error) {
