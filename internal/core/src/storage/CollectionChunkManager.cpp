@@ -8,6 +8,7 @@
 #include <grpcpp/grpcpp.h>
 #include <grpc/grpc.h>
 #include <typeinfo>
+#include <chrono>
 
 
 namespace milvus::storage {
@@ -169,7 +170,14 @@ std::shared_ptr<ChunkManager> CollectionChunkManager::GetChunkManager(
     LOG_SEGCORE_INFO_ << "Got NewCredentials for collection ID: " << collection_id;
     auto updated_config = GetUpdatedStorageConfig(*credentials);
     LOG_SEGCORE_INFO_ << "Created updated storage config for collection ID: " << collection_id;
+    auto requestStartTime = std::chrono::high_resolution_clock::now();
     auto chunk_manager = milvus::storage::CreateChunkManager(updated_config);
+    auto chunkManagerCreationTime = std::chrono::high_resolution_clock::now();
+    auto timeTakenToCreateNewChunkManager = std::chrono::duration_cast<std::chrono::milliseconds>(
+                chunkManagerCreationTime - requestStartTime).count();
+
+    LOG_SEGCORE_INFO_ << "CustomOp timeTakenToCreateNewChunkManager: " << timeTakenToCreateNewChunkManager ;
+
     if (fetch_from_cache) {
         std::chrono::system_clock::time_point expiration = ConvertToChronoTime(credentials->expiration_timestamp());
         chunkManagerMemoryCache[collection_id] = std::make_tuple(chunk_manager, expiration);
@@ -205,9 +213,15 @@ uint64_t CollectionChunkManager::Read(const std::string& filepath, void* buf, ui
 }
 
 void CollectionChunkManager::Write(const std::string& filepath, void* buf, uint64_t size) {
+    auto requestStartTime = std::chrono::high_resolution_clock::now();
     LOG_SEGCORE_INFO_ << "CustomOp writing to filePath: " << filepath;
     using WriteFuncType = void (ChunkManager::*)(const std::string&, void*, uint64_t);
     ApplyToChunkManager(remote_root_path_, static_cast<WriteFuncType>(&ChunkManager::Write), filepath, buf, size);
+    auto writeCompletionTime = std::chrono::high_resolution_clock::now();
+    auto timeTakenInMilliSecondsForCompleteWrite = std::chrono::duration_cast<std::chrono::milliseconds>(
+            writeCompletionTime - requestStartTime).count();
+
+    LOG_SEGCORE_INFO_ << "CustomOp timeTakenInMilliSecondsForCompleteWrite: " << timeTakenInMilliSecondsForCompleteWrite ;
 }
 
 } // namespace milvus::storage
