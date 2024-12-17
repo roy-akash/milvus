@@ -1,4 +1,4 @@
---extra-index-url https://test.pypi.org/simple/
+--extra-index-url nexus-proxy.repo.local.sfdc.net/nexus/repository/pypi-all
 pytest-cov==2.8.1
 requests==2.26.0
 scikit-learn==1.1.3

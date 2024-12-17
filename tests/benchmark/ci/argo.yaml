@@ -173,7 +173,7 @@ spec:
           - /bin/sh
           - '-c'
         args:
-          - ' cd /src && pip install -r requirements.txt -i https://pypi.doubanio.com/simple/ --trusted-host pypi.doubanio.com && pip install -i https://test.pypi.org/simple/ pymilvus=={{workflow.parameters.test-sdk-version}} && cd milvus_benchmark && export PYTHONPATH=/src && python main.py --host={{inputs.parameters.server-instance}}-milvus.qa-milvus.svc.cluster.local --local --suite=/configmap-client/config.yaml --server-config=/configmap-server/config.yaml'
+          - ' cd /src && pip install -r requirements.txt -i https://pypi.doubanio.com/simple/ --trusted-host pypi.doubanio.com && pip install -i nexus-proxy.repo.local.sfdc.net/nexus/repository/pypi-all pymilvus=={{workflow.parameters.test-sdk-version}} && cd milvus_benchmark && export PYTHONPATH=/src && python main.py --host={{inputs.parameters.server-instance}}-milvus.qa-milvus.svc.cluster.local --local --suite=/configmap-client/config.yaml --server-config=/configmap-server/config.yaml'
         resources:
           limits:
             cpu: '4'

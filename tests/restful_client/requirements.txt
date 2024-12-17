@@ -1,4 +1,4 @@
---extra-index-url https://test.pypi.org/simple/
+--extra-index-url nexus-proxy.repo.local.sfdc.net/nexus/repository/pypi-all
 requests==2.31.0
 urllib3==1.26.18
 pytest==7.2.0

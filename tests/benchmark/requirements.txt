@@ -1,5 +1,5 @@
 # for local install
-# --extra-index-url https://test.pypi.org/simple/
+# --extra-index-url nexus-proxy.repo.local.sfdc.net/nexus/repository/pypi-all
 # pymilvus==2.0.0rc3.dev8
 
 grpcio==1.53.2
