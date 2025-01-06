@@ -100,7 +100,16 @@ public:
         } else {
             int number_of_slashes = std::count(root_path.begin(), root_path.end(), '/');
 			const auto& file_path = std::get<0>(std::forward_as_tuple(args...));
-            int index = number_of_slashes + 2;
+            // Adjust index based on whether the file_path contains "analyze_stats"
+            int index;
+            if (file_path.find("analyze_stats") != std::string::npos) {
+                index = number_of_slashes + 4;
+                LOG_INFO("FilePath contains 'analyze_stats'. Adjusting index to: {}", index);
+            } else {
+                index = number_of_slashes + 2;
+                LOG_INFO("Default index: {}", index);
+            }
+
             std::string_view collection_id_str = GetPartByIndex(file_path, '/', index);
             collection_id = std::stoll(std::string(collection_id_str));
             LOG_INFO("GetPartByIndex: number_of_slashes: {}, index: {}, root_path: {}, file_path: {}, collection_id_str: {}",

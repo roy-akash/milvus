@@ -182,6 +182,16 @@ func (mcm *FabricRemoteChunkManager) MultiRead(ctx context.Context, keys []strin
 	return objectsValues, el
 }
 
+func (mcm *FabricRemoteChunkManager) WalkWithPrefix(ctx context.Context, prefix string, recursive bool, walkFunc storage.ChunkObjectWalkFunc) (err error) {
+	log.Debug("WalkWithPrefix called for path ", zap.String("prefix", prefix), zap.Bool("recursive", recursive))
+	//always use global chunk manager
+	gcm, err := mcm.getGlobalChunkManager(ctx)
+	if err != nil {
+		return err
+	}
+	return gcm.chunkManager.WalkWithPrefix(ctx, prefix, recursive, walkFunc)
+}
+
 // Remove deletes an object with @key.
 func (mcm *FabricRemoteChunkManager) Remove(ctx context.Context, filePath string) error {
 	log.Debug("Remove called for path ", zap.String("filePath", filePath))
@@ -203,13 +213,24 @@ func (mcm *FabricRemoteChunkManager) RemoveWithPrefix(ctx context.Context, prefi
 }
 
 func (mcm *FabricRemoteChunkManager) retrieveCollectionIDFromFilepath(filePath string) (int64, error) {
-	log.Info("Retrieving collection id from filePath.", zap.String("filePath", "filePath"))
-	collectionIdIndex := strings.Count(params.MinioCfg.RootPath.GetValue(), "/") + 2
-	log.Info("collection id index", zap.Int("collectionIdIndex", collectionIdIndex))
+	log.Debug("Retrieving collection id from filePath.", zap.String("filePath", filePath))
+
+	// Determine the collectionIdIndex based on the presence of "analyze_stats"
+	var collectionIdIndex int
+	if strings.Contains(filePath, "analyze_stats") {
+		collectionIdIndex = strings.Count(params.MinioCfg.RootPath.GetValue(), "/") + 4
+		log.Debug("FilePath contains 'analyze_stats'. Adjusting collectionIdIndex.", zap.Int("collectionIdIndex", collectionIdIndex))
+	} else {
+		collectionIdIndex = strings.Count(params.MinioCfg.RootPath.GetValue(), "/") + 2
+		log.Debug("Default collectionIdIndex.", zap.Int("collectionIdIndex", collectionIdIndex))
+	}
+
+	// Attempt to parse the collection ID
 	collId, err := strconv.ParseInt(strings.Split(filePath, "/")[collectionIdIndex], 10, 64)
 	if err != nil {
-		log.Error("error occurred while trying to derive collection id", zap.String("filePath", filePath), zap.Error(err))
+		log.Error("Error occurred while trying to derive collection ID.", zap.String("filePath", filePath), zap.Error(err))
 	}
+
 	return collId, err
 }
 
