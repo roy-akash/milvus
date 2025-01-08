@@ -22,7 +22,7 @@ std::unordered_map<int64_t, std::tuple<std::shared_ptr<ChunkManager>, std::chron
 
 
 CollectionChunkManager::CollectionChunkManager(const StorageConfig& config) {
-    LOG_SEGCORE_INFO_ << "Initializing CollectionChunkManager with config: " << config.ToString();
+    LOG_INFO("Initializing CollectionChunkManager with config: {}", config.ToString());
     storageConfigTemplate = config;
     default_bucket_name_ = config.bucket_name;
     remote_root_path_ = config.root_path;
@@ -40,7 +40,7 @@ std::shared_ptr<CollectionChunkManager> CollectionChunkManager::GetInstance(cons
 
 bool CollectionChunkManager::IsExpired(const std::chrono::system_clock::time_point& expiration) {
     bool expired = std::chrono::system_clock::now() > expiration;
-    LOG_SEGCORE_INFO_ << "Checking if expiration time is expired: " << expired;
+    LOG_INFO("Checking if expiration time is expired: {}", expired);
     return expired;
 }
 
@@ -52,18 +52,17 @@ std::shared_ptr<milvus::dpccvsaccessmanager::DpcCvsAccessManagerClient> Collecti
         try {
             dpcCvsAccessManagerClient_ = std::make_shared<milvus::dpccvsaccessmanager::DpcCvsAccessManagerClient>();
             if (!dpcCvsAccessManagerClient_) {
-                LOG_SEGCORE_ERROR_ << "Failed to create DpcCvsAccessManagerClient.";
+                LOG_ERROR("Failed to create DpcCvsAccessManagerClient.");
                 return nullptr;
             }
-
-            LOG_SEGCORE_INFO_ << "Created new DpcCvsAccessManagerClient.";
+            LOG_INFO("Created new DpcCvsAccessManagerClient.");
         } catch (const std::exception& e) {
-            LOG_SEGCORE_ERROR_ << "Exception creating channel: " << e.what();
+            LOG_ERROR("Exception creating channel: {}", e.what());
         } catch (...) {
-            LOG_SEGCORE_ERROR_ << "Unknown error creating channel.";
+            LOG_ERROR("Unknown error creating channel.");
         }
     } else {
-        LOG_SEGCORE_INFO_ << "dpcCvsAccessManagerClient_ is already initialized.";
+        LOG_INFO("dpcCvsAccessManagerClient_ is already initialized.");
     }
 
     return dpcCvsAccessManagerClient_;
@@ -80,10 +79,10 @@ std::shared_ptr<salesforce::cdp::dpccvsaccessmanager::v1::GetCredentialsResponse
 
     try {
 		response = client->GetCredentials(std::to_string(collection_id), instance_name, bucket_name, write_access);
-        LOG_SEGCORE_INFO_ << "Successfully obtained new credentials for collection ID: " << collection_id;
+        LOG_INFO("Successfully obtained new credentials for collection ID: {}", collection_id);
         return std::make_shared<salesforce::cdp::dpccvsaccessmanager::v1::GetCredentialsResponse>(response);
     } catch (const std::exception& e) {
-        LOG_SEGCORE_ERROR_ << "Error getting new credentials: " << e.what();
+        LOG_ERROR("Error getting new credentials: {}", e.what());
     }
     return nullptr;
 }
@@ -96,7 +95,7 @@ StorageConfig CollectionChunkManager::GetUpdatedStorageConfig(const salesforce::
     updated_config.session_token = response.session_token();
     updated_config.kms_key_id = response.tenant_key_id();
     updated_config.byok_enabled = false;
-    LOG_SEGCORE_INFO_ << "Updated storage config with new credentials.";
+    LOG_INFO("Updated storage config with new credentials.");
     return updated_config;
 }
 
@@ -110,7 +109,7 @@ std::chrono::system_clock::time_point CollectionChunkManager::ConvertToChronoTim
 
 std::string_view
 CollectionChunkManager::GetPartByIndex(const std::string_view str, char delimiter, int index) {
-    LOG_SEGCORE_INFO_ << "GetPartByIndex called for path" << std::string(str) ;
+    LOG_INFO("GetPartByIndex called for path: {}", std::string(str));
     size_t start = 0;
     size_t end = str.find(delimiter);
 
@@ -140,88 +139,89 @@ std::shared_ptr<ChunkManager> CollectionChunkManager::GetChunkManager(
     bool write_access,
     bool fetch_from_cache) {
     if (!storageConfigTemplate.byok_enabled) {
-        LOG_SEGCORE_INFO_ << "BYOK not enabled, using RemoteChunkManagerSingleton.";
+        LOG_INFO("BYOK not enabled, using RemoteChunkManagerSingleton");
         return milvus::storage::RemoteChunkManagerSingleton::GetInstance()
                 .GetRemoteChunkManager();
     }
 
     const std::string& bucket_name = storageConfigTemplate.bucket_name;
-    LOG_SEGCORE_INFO_ << "Getting ChunkManager for collection ID: " << collection_id;
+    LOG_INFO("Getting ChunkManager for collection ID: {}", collection_id);
 
     if (fetch_from_cache) {
         auto cacheObject = chunkManagerMemoryCache.find(collection_id);
         if (cacheObject != chunkManagerMemoryCache.end()) {
             auto [chunk_manager, expiration] = cacheObject->second;
             if (!IsExpired(expiration)) {
-                LOG_SEGCORE_INFO_ << "Found valid ChunkManager in cache for collection ID: " << collection_id;
+                LOG_INFO("Found valid ChunkManager in cache for collection ID: {}", collection_id);
                 return chunk_manager;
             } else {
-                LOG_SEGCORE_INFO_ << "Cached ChunkManager expired for collection ID: " << collection_id;
+                LOG_INFO("Cached ChunkManager expired for collection ID: {}", collection_id);
             }
         }
     }
 
-    LOG_SEGCORE_INFO_ << "Getting GetNewCredentials for collection ID: " << collection_id;
+    LOG_INFO("Getting GetNewCredentials for collection ID: {}", collection_id);
     auto credentials = GetNewCredentials(collection_id, instance_name, bucket_name, write_access);
     if (credentials == nullptr) {
-        LOG_SEGCORE_ERROR_ << "Failed to get new credentials for collection ID: " << collection_id;
+        LOG_INFO("Failed to get new credentials for collection ID: {}", collection_id);
         return nullptr;
     }
-    LOG_SEGCORE_INFO_ << "Got NewCredentials for collection ID: " << collection_id;
+    LOG_INFO("Got NewCredentials for collection ID: {}", collection_id);
     auto updated_config = GetUpdatedStorageConfig(*credentials);
-    LOG_SEGCORE_INFO_ << "Created updated storage config for collection ID: " << collection_id;
+    LOG_INFO("Created updated storage config for collection ID: {}", collection_id);
     auto requestStartTime = std::chrono::high_resolution_clock::now();
     auto chunk_manager = milvus::storage::CreateChunkManager(updated_config);
     auto chunkManagerCreationTime = std::chrono::high_resolution_clock::now();
     auto timeTakenToCreateNewChunkManager = std::chrono::duration_cast<std::chrono::milliseconds>(
                 chunkManagerCreationTime - requestStartTime).count();
 
-    LOG_SEGCORE_INFO_ << "CustomOp timeTakenToCreateNewChunkManager: " << timeTakenToCreateNewChunkManager ;
+    LOG_INFO("CustomOp timeTakenToCreateNewChunkManager: {}", timeTakenToCreateNewChunkManager);
 
     if (fetch_from_cache) {
         std::chrono::system_clock::time_point expiration = ConvertToChronoTime(credentials->expiration_timestamp());
         chunkManagerMemoryCache[collection_id] = std::make_tuple(chunk_manager, expiration);
-        LOG_SEGCORE_INFO_ << "Cached new ChunkManager for collection ID: " << collection_id;
+        LOG_INFO("Cached new ChunkManager for collection ID: {}", collection_id);
     }
     return chunk_manager;
 }
 
 uint64_t CollectionChunkManager::Size(const std::string& filepath) {
-    LOG_SEGCORE_INFO_ << "CustomOp Getting Size for filePath: " << filepath;
+    LOG_INFO("CustomOp Getting Size for filePath: {}", filepath);
+
     return ApplyToChunkManager(remote_root_path_, &ChunkManager::Size, filepath);
 }
 
 bool CollectionChunkManager::Exist(const std::string& filepath) {
-    LOG_SEGCORE_INFO_ << "CustomOp calling Exist for filePath: " << filepath;
+    LOG_INFO("CustomOp calling Exist for filePath: {}", filepath);
     return ApplyToChunkManager(remote_root_path_, &ChunkManager::Exist, filepath);
 }
 
 void CollectionChunkManager::Remove(const std::string& filepath) {
-    LOG_SEGCORE_INFO_ << "CustomOp calling Remove for filePath: " << filepath;
+    LOG_INFO("CustomOp calling Remove for filePath: {}", filepath);
     ApplyToChunkManager(remote_root_path_, &ChunkManager::Remove, filepath);
 }
 
 std::vector<std::string> CollectionChunkManager::ListWithPrefix(const std::string& filepath) {
-    LOG_SEGCORE_INFO_ << "CustomOp calling ListWithPrefix for filePath: " << filepath;
+    LOG_INFO("CustomOp calling ListWithPrefix for filePath: {}", filepath);
     return ApplyToChunkManager(remote_root_path_, &ChunkManager::ListWithPrefix, filepath);
 }
 
 uint64_t CollectionChunkManager::Read(const std::string& filepath, void* buf, uint64_t size) {
-    LOG_SEGCORE_INFO_ << "CustomOp reading from filePath: " << filepath;
+    LOG_INFO("CustomOp reading from filePath: {}", filepath);
     using ReadFuncType = uint64_t (ChunkManager::*)(const std::string&, void*, uint64_t);
     return ApplyToChunkManager(remote_root_path_, static_cast<ReadFuncType>(&ChunkManager::Read), filepath, buf, size);
 }
 
 void CollectionChunkManager::Write(const std::string& filepath, void* buf, uint64_t size) {
     auto requestStartTime = std::chrono::high_resolution_clock::now();
-    LOG_SEGCORE_INFO_ << "CustomOp writing to filePath: " << filepath;
+    LOG_INFO("CustomOp writing to filePath: {}", filepath);
     using WriteFuncType = void (ChunkManager::*)(const std::string&, void*, uint64_t);
     ApplyToChunkManager(remote_root_path_, static_cast<WriteFuncType>(&ChunkManager::Write), filepath, buf, size);
     auto writeCompletionTime = std::chrono::high_resolution_clock::now();
     auto timeTakenInMilliSecondsForCompleteWrite = std::chrono::duration_cast<std::chrono::milliseconds>(
             writeCompletionTime - requestStartTime).count();
 
-    LOG_SEGCORE_INFO_ << "CustomOp timeTakenInMilliSecondsForCompleteWrite: " << timeTakenInMilliSecondsForCompleteWrite ;
+    LOG_INFO("CustomOp timeTakenInMilliSecondsForCompleteWrite: {}", timeTakenInMilliSecondsForCompleteWrite);
 }
 
 } // namespace milvus::storage

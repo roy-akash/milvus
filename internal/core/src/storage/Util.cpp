@@ -707,7 +707,8 @@ ReleaseArrowUnused() {
 ChunkManagerPtr
 CreateChunkManager(const StorageConfig& storage_config) {
     if(storage_config.byok_enabled){
-        LOG_SEGCORE_INFO_ << "Initializing a new CollectionChunkManager with BYOK enabled. Configuration details: " << storage_config.ToString();
+        LOG_INFO("Initializing a new CollectionChunkManager with BYOK enabled. Configuration details: {}",
+                 storage_config.ToString());
         return CollectionChunkManager::GetInstance(storage_config);
     }
     auto storage_type = ChunkManagerType_Map[storage_config.storage_type];

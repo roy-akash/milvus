@@ -49,6 +49,10 @@ message StorageConfig {
   int64 request_timeout_ms = 13;
   string sslCACert = 14;
   string GcpCredentialJSON = 15;
+  bool useCollectionIdIndexPath = 16;
+  bool byok_enabled = 17;
+  string session_token = 18;
+  string kms_key_id = 19;
 }
 
 // Synchronously modify OptionalFieldInfo in index_coord.proto file

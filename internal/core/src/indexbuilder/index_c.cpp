@@ -105,8 +105,8 @@ get_storage_config(const milvus::proto::indexcgo::StorageConfig& config) {
     storage_config.requestTimeoutMs = config.request_timeout_ms();
     storage_config.gcp_credential_json =
         std::string(config.gcpcredentialjson());
-    storage_config.useCollectionIdIndexPath = c_storage_config.useCollectionIdIndexPath;
-    storage_config.byok_enabled = c_storage_config.byok_enabled;
+    storage_config.useCollectionIdIndexPath = config.usecollectionidindexpath();
+    storage_config.byok_enabled = config.byok_enabled();
     return storage_config;
 }
 

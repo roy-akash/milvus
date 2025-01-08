@@ -254,7 +254,7 @@ MinioChunkManager::BuildAccessKeyClient(
                "if not use iam, access value should not be empty");
 
     if (!storage_config.session_token.empty()) {
-        LOG_SEGCORE_INFO_ << "Setting cvs creds";
+        LOG_INFO("Setting cvs creds");
         client_ = std::make_shared<Aws::S3::S3Client>(
                 Aws::Auth::AWSCredentials(
                         ConvertToAwsString(storage_config.access_key_id),
@@ -275,8 +275,7 @@ MinioChunkManager::BuildAccessKeyClient(
 
     if (!storage_config.kms_key_id.empty()) {
         aws_kms_key_id_ = ConvertToAwsString(storage_config.kms_key_id);
-        LOG_SEGCORE_INFO_ << "Set AWS SSE KMS Key ID in MinioChunkManager: "
-                          << aws_kms_key_id_;
+        LOG_INFO("Set AWS SSE KMS Key ID in MinioChunkManager: {}", aws_kms_key_id_);
     }
 
 }
@@ -603,8 +602,7 @@ MinioChunkManager::PutObjectBuffer(const std::string& bucket_name,
     if (!aws_kms_key_id_.empty()) {
         request.SetServerSideEncryption(Aws::S3::Model::ServerSideEncryption::aws_kms);
         request.SetSSEKMSKeyId(aws_kms_key_id_);
-        LOG_SEGCORE_INFO_ << "Set AWS SSE KMS Key ID in S3 PutObjectRequest: "
-                          << aws_kms_key_id_;
+        LOG_INFO("Set AWS SSE KMS Key ID in S3 PutObjectRequest: {}", aws_kms_key_id_);
     }
 
     auto start = std::chrono::system_clock::now();

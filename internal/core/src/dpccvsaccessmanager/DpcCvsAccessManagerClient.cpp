@@ -13,7 +13,7 @@ DpcCvsAccessManagerClient::DpcCvsAccessManagerClient() {
     auto channel_ = grpc::CreateChannel(std::getenv("ACCESS_MANAGER_SERVICE_URL"), grpc::InsecureChannelCredentials());
     stub_ = salesforce::cdp::dpccvsaccessmanager::v1::DpcCvsAccessManager::NewStub(channel_);
     if (!stub_) {
-        LOG_SEGCORE_ERROR_ << "Failed to create stub.";
+        LOG_ERROR("Failed to create stub.");
         throw std::runtime_error("Failed to create gRPC stub.");
     }
 }
@@ -28,7 +28,7 @@ salesforce::cdp::dpccvsaccessmanager::v1::GetCredentialsResponse DpcCvsAccessMan
     const std::string& bucket_name,
     bool write_access) {
 
-    LOG_SEGCORE_INFO_ << "Inside DpcCvsAccessManagerClient::GetCredentials";
+    LOG_INFO("Inside DpcCvsAccessManagerClient::GetCredentials");
 
     salesforce::cdp::dpccvsaccessmanager::v1::GetCredentialsRequest request;
     request.set_application_type(salesforce::cdp::dpccvsaccessmanager::v1::ApplicationType::MILVUS);
@@ -39,20 +39,22 @@ salesforce::cdp::dpccvsaccessmanager::v1::GetCredentialsResponse DpcCvsAccessMan
     request.set_bucket_name(bucket_name);
     request.set_write_access(write_access);
 
-    LOG_SEGCORE_INFO_ << "Request prepared - Application Type: " << request.application_type()
-                      << ", Collection ID: " << request.collection_id()
-                      << ", Instance Name: " << request.instance_name()
-                      << ", Bucket Name: " << request.bucket_name()
-                      << ", Write Access: " << (request.write_access() ? "true" : "false");
+    LOG_INFO("Request prepared - Application Type: {}, Collection ID: {}, Instance Name: {}, Bucket Name: {}, Write Access: {}",
+             request.application_type(),
+             request.collection_id(),
+             request.instance_name(),
+             request.bucket_name(),
+             request.write_access() ? "true" : "false");
+
 
     salesforce::cdp::dpccvsaccessmanager::v1::GetCredentialsResponse response;
 
     if (!stub_) {
-        LOG_SEGCORE_ERROR_ << "Stub is not initialized.";
+        LOG_ERROR("Stub is not initialized.");
         throw std::runtime_error("Stub is not initialized");
     }
 
-    LOG_SEGCORE_INFO_ << "Sending gRPC request to GetCredentials." << std::flush;
+    LOG_INFO("Sending gRPC request to GetCredentials.");
 
     const int max_retries = 3;
     int attempt = 0;
@@ -65,26 +67,29 @@ salesforce::cdp::dpccvsaccessmanager::v1::GetCredentialsResponse DpcCvsAccessMan
             status = stub_->GetCredentials(&context, request, &response);
 
             if (status.ok()) {
-                LOG_SEGCORE_INFO_ << "Received response from GetCredentials.";
-                LOG_SEGCORE_INFO_ << "Response - Access Key ID: " << response.access_key_id()
-                                  << ", Secret Access Key: [REDACTED]"
-                                  << ", Session Token: [REDACTED]"
-                                  << ", Expiration: " << response.expiration_timestamp();
+                LOG_INFO("Received response from GetCredentials.");
+                LOG_INFO("Response - Access Key ID: {}, Secret Access Key: [REDACTED], Session Token: [REDACTED], Expiration: {}",
+                         response.access_key_id(),
+                         response.expiration_timestamp());
                 return response;
             } else {
-                LOG_SEGCORE_ERROR_ << "gRPC call failed with error: " << status.error_message()
-                                   << ", error code: " << status.error_code();
+                LOG_ERROR("gRPC call failed with error: {}, error code: {}",
+                          status.error_message(),
+                          status.error_code());
             }
         } catch (const std::exception& e) {
-            LOG_SEGCORE_ERROR_ << "Exception during gRPC call: " << e.what();
+            LOG_ERROR("Exception during gRPC call: {}", e.what());
         } catch (...) {
-            LOG_SEGCORE_ERROR_ << "Unknown exception during gRPC call.";
+            LOG_ERROR("Unknown exception during gRPC call.");
         }
 
         ++attempt;
         if (attempt < max_retries) {
             auto delay = std::chrono::seconds(1 << attempt);
-            LOG_SEGCORE_INFO_ << "Retrying GetCredentials (" << attempt << "/" << max_retries << ") after a delay of " << delay.count() << " seconds.";
+            LOG_INFO("Retrying GetCredentials ({}/{}) after a delay of {} seconds.",
+                     attempt,
+                     max_retries,
+                     delay.count());
             std::this_thread::sleep_for(delay);
         }
     }
