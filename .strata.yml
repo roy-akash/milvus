@@ -16,7 +16,7 @@ stages:
   build:
     - step:
         name: Make_Install
-        image: docker.repo.local.sfdc.net/sfci/a360/milvus-sfci-docker:13
+        image: docker.repo.local.sfdc.net/sfci/a360/milvus-sfci-docker:jenkins-a360-milvus-sfci-docker-2.5_dev-9-itest
         user: 'root'
         workspace-mount-point: /tmp/project
         commands:

@@ -67,16 +67,16 @@ fi
 unameOut="$(uname -s)"
 case "${unameOut}" in
   Darwin*)
-    conan install ${CPP_SRC_DIR} --install-folder conan --build=missing -s compiler=clang -s compiler.version=${llvm_version} -s compiler.libcxx=libc++ -s compiler.cppstd=17 -r default-conan-local -u || { echo 'conan install failed'; exit 1; }
+    conan install ${CPP_SRC_DIR} --install-folder conan --build=missing -s compiler=clang -s compiler.version=${llvm_version} -s compiler.libcxx=libc++ -s compiler.cppstd=17 || { echo 'conan install failed'; exit 1; }
     ;;
   Linux*)
     echo "Running on ${OS_NAME}"
     export CPU_TARGET=avx
     GCC_VERSION=`gcc -dumpversion`
     if [[ `gcc -v 2>&1 | sed -n 's/.*\(--with-default-libstdcxx-abi\)=\(\w*\).*/\2/p'` == "gcc4" ]]; then
-      conan install ${CPP_SRC_DIR} --install-folder conan --build=missing -s compiler.version=${GCC_VERSION} -r default-conan-local -u || { echo 'conan install failed'; exit 1; }
+      conan install ${CPP_SRC_DIR} --install-folder conan --build=missing -s compiler.version=${GCC_VERSION} || { echo 'conan install failed'; exit 1; }
     else
-      conan install ${CPP_SRC_DIR} --install-folder conan --build=missing -s compiler.version=${GCC_VERSION} -s compiler.libcxx=libstdc++11 -r default-conan-local -u || { echo 'conan install failed'; exit 1; }
+      conan install ${CPP_SRC_DIR} --install-folder conan --build=missing -s compiler.version=${GCC_VERSION} -s compiler.libcxx=libstdc++11 || { echo 'conan install failed'; exit 1; }
     fi
     ;;
   *)
@@ -104,6 +104,12 @@ if command -v cargo >/dev/null 2>&1; then
           echo "not running on mac os, no need to reinstall rust";;
     esac
 else
-    bash -c "curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain=1.73 -y" || { echo 'rustup install failed'; exit 1;}
-    source $HOME/.cargo/env
+    # added the cargo installer script in the codebase itself as dowloading the installer script is not allowed in SFCI build env
+    bash ${ROOT_DIR}/scripts/install_rustup.sh --default-toolchain=1.73 -y || { echo 'rustup install failed'; exit 1; }
+    . $HOME/.cargo/env
 fi
+
+cargo --version
+
+# cargo by default uses SPARSE mode to download dependencies which is not allowed in SFCI build env
+echo -e '[registries.crates-io]\nprotocol = "git"' > $HOME/.cargo/config.toml

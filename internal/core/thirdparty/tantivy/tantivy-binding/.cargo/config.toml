@@ -1,0 +1,2 @@
+[registries.crates-io]
+protocol = "git"  # The protocol to use to access crates.io.

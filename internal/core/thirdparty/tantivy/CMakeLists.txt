@@ -15,20 +15,28 @@ set(LIB_HEADER_FOLDER "${CMAKE_CURRENT_SOURCE_DIR}/tantivy-binding/include")
 
 # In fact, cargo was already installed on our builder environment.
 # Below settings are used to suit for first local development.
+
 set(HOME_VAR $ENV{HOME})
-set(PATH_VAR $ENV{PATH})
-set(ENV{PATH} ${HOME_VAR}/.cargo/bin:${PATH_VAR})
+set(CARGO_BIN_DIR "${HOME_VAR}/.cargo/bin")
+set(ENV{PATH} "${CARGO_BIN_DIR}:$ENV{PATH}")
+message(STATUS "Updated PATH: $ENV{PATH}")
+
+execute_process(COMMAND which cargo
+                OUTPUT_VARIABLE CARGO_PATH
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+message(STATUS "Cargo found at: ${CARGO_PATH}")
+
 message($ENV{PATH})
 
 add_custom_command(OUTPUT ls_cargo
-        COMMENT "ls cargo"
-        COMMAND ls ${HOME_VAR}/.cargo/bin/
+        COMMENT "Listing cargo directory"
+        COMMAND ls ${CARGO_BIN_DIR}
         )
 add_custom_target(ls_cargo_target DEPENDS ls_cargo)
 
 add_custom_command(OUTPUT compile_tantivy
         COMMENT "Compiling tantivy binding"
-        COMMAND CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} ${CARGO_CMD}
+        COMMAND source ${HOME_VAR}/.cargo/env && CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} ${CARGO_CMD}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tantivy-binding)
 add_custom_target(tantivy_binding_target DEPENDS compile_tantivy ls_cargo_target)
 

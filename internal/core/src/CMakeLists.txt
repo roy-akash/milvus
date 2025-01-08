@@ -67,6 +67,7 @@ add_library(milvus_core SHARED
     $<TARGET_OBJECTS:milvus_exec>
     $<TARGET_OBJECTS:milvus_bitset>
     $<TARGET_OBJECTS:milvus_futures>
+    $<TARGET_OBJECTS:milvus_dpccvsaccessmanager>
 )
 
 set(LINK_TARGETS
