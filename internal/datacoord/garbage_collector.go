@@ -54,8 +54,8 @@ type GcOption struct {
 	dropTolerance    time.Duration        // dropped segment related key tolerance time
 	scanInterval     time.Duration        // interval for scan residue for interupted log wrttien
 
-	broker           broker.Broker
-	removeObjectPool *conc.Pool[struct{}]
+	broker                        broker.Broker
+	removeObjectPool              *conc.Pool[struct{}]
 	useCollectionIdBasedIndexPath bool
 }
 
@@ -693,19 +693,20 @@ func (gc *garbageCollector) recycleUnusedIndexFiles(ctx context.Context) {
 			logger := log.With(zap.String("prefix", prefix), zap.String("collPrefix", collPrefix))
 			logger.Info("cleaning up for collection id")
 
-			gc.cleanUpUnusedIndexFilesForPrefix(ctx,collPrefix)
+			gc.cleanUpUnusedIndexFilesForPrefix(ctx, collPrefix)
 			return true
 		})
 		if err != nil {
 			log.Warn("garbageCollector recycleUnusedIndexFiles failed", zap.Error(err))
 			return
 		}
-	}else {
-		gc.cleanUpUnusedIndexFilesForPrefix(ctx,prefix)
+	} else {
+		gc.cleanUpUnusedIndexFilesForPrefix(ctx, prefix)
 	}
 }
 
-func (gc *garbageCollector) cleanUpUnusedIndexFilesForPrefix(ctx context.Context, prefix string){
+func (gc *garbageCollector) cleanUpUnusedIndexFilesForPrefix(ctx context.Context, prefix string) {
+	start := time.Now()
 	keyCount := 0
 	err := gc.option.cli.WalkWithPrefix(ctx, prefix, false, func(indexPathInfo *storage.ChunkObjectInfo) bool {
 		key := indexPathInfo.FilePath
@@ -778,14 +779,13 @@ func (gc *garbageCollector) cleanUpUnusedIndexFilesForPrefix(ctx context.Context
 		logger.Info("index files recycle done")
 		return true
 	})
-	log.With(zap.Duration("timeCost", time.Since(start)), zap.Int("keyCount", keyCount), zap.Error(err), zap.String("prefix",prefix))
+	log.With(zap.Duration("timeCost", time.Since(start)), zap.Int("keyCount", keyCount), zap.Error(err), zap.String("prefix", prefix))
 	if err != nil {
 		log.Warn("garbageCollector recycleUnusedIndexFiles failed", zap.Error(err))
 		return
 	}
 	log.Info("recycleUnusedIndexFiles done")
 }
-
 
 // getAllIndexFilesOfIndex returns the all index files of index.
 func (gc *garbageCollector) getAllIndexFilesOfIndex(segmentIndex *model.SegmentIndex) map[string]struct{} {

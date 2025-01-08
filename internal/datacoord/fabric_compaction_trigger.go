@@ -29,5 +29,5 @@ func (t *fabricCompactionTrigger) forceTriggerCompaction(collectionID int64) (Un
 	if err != nil {
 		log.Warn("Unable to refresh access credentials", zap.Error(err))
 	}
-	return t.compactionTrigger.forceTriggerCompaction(collectionID)
+	return t.compactionTrigger.triggerManualCompaction(collectionID)
 }

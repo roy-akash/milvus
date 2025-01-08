@@ -202,17 +202,6 @@ func (mcm *FabricRemoteChunkManager) RemoveWithPrefix(ctx context.Context, prefi
 	return rcm.RemoveWithPrefix(ctx, prefix)
 }
 
-func (mcm *FabricRemoteChunkManager) ListWithPrefix(ctx context.Context, prefix string, recursive bool) ([]string, []time.Time, error) {
-	log.Debug("ListWithPrefix called for path ", zap.String("prefix", prefix))
-
-	//always use global chunk manager
-	gcm, err := mcm.getGlobalChunkManager(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-	return gcm.chunkManager.ListWithPrefix(ctx, prefix, recursive)
-}
-
 func (mcm *FabricRemoteChunkManager) retrieveCollectionIDFromFilepath(filePath string) (int64, error) {
 	log.Info("Retrieving collection id from filePath.", zap.String("filePath", "filePath"))
 	collectionIdIndex := strings.Count(params.MinioCfg.RootPath.GetValue(), "/") + 2

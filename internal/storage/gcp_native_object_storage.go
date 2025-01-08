@@ -39,6 +39,10 @@ type GcpNativeObjectStorage struct {
 	client *storage.Client
 }
 
+func (gcs *GcpNativeObjectStorage) PutObjectWithSseKey(ctx context.Context, bucketName, objectName string, reader io.Reader, objectSize int64, sseKey string) error {
+	return errors.New("this method has not been implemented")
+}
+
 func newGcpNativeObjectStorageWithConfig(ctx context.Context, c *Config) (*GcpNativeObjectStorage, error) {
 	var client *storage.Client
 	var err error
