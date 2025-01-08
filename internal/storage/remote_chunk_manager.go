@@ -78,7 +78,7 @@ type RemoteChunkManager struct {
 
 var _ ChunkManager = (*RemoteChunkManager)(nil)
 
-func NewRemoteChunkManager(ctx context.Context, c *config) (*RemoteChunkManager, error) {
+func NewRemoteChunkManager(ctx context.Context, c *Config) (*RemoteChunkManager, error) {
 	var client ObjectStorage
 	var err error
 	if c.cloudProvider == CloudProviderAzure {
@@ -93,11 +93,11 @@ func NewRemoteChunkManager(ctx context.Context, c *config) (*RemoteChunkManager,
 	}
 	mcm := &RemoteChunkManager{
 		client:     client,
-		bucketName: c.bucketName,
+		bucketName: c.BucketName,
 		rootPath:   strings.TrimLeft(c.rootPath, "/"),
-		sseKms:     c.sseKms,
+		sseKms:     c.SseKms,
 	}
-	log.Info("remote chunk manager init success.", zap.String("remote", c.cloudProvider), zap.String("bucketname", c.bucketName), zap.String("root", mcm.RootPath()))
+	log.Info("remote chunk manager init success.", zap.String("remote", c.cloudProvider), zap.String("bucketname", c.BucketName), zap.String("root", mcm.RootPath()))
 	return mcm, nil
 }
 

@@ -39,7 +39,7 @@ type GcpNativeObjectStorage struct {
 	client *storage.Client
 }
 
-func newGcpNativeObjectStorageWithConfig(ctx context.Context, c *config) (*GcpNativeObjectStorage, error) {
+func newGcpNativeObjectStorageWithConfig(ctx context.Context, c *Config) (*GcpNativeObjectStorage, error) {
 	var client *storage.Client
 	var err error
 
@@ -72,16 +72,16 @@ func newGcpNativeObjectStorageWithConfig(ctx context.Context, c *config) (*GcpNa
 		return nil, err
 	}
 
-	if c.bucketName == "" {
+	if c.BucketName == "" {
 		return nil, merr.WrapErrParameterInvalidMsg("invalid empty bucket name")
 	}
 	// Check bucket validity
 	checkBucketFn := func() error {
-		bucket := client.Bucket(c.bucketName)
+		bucket := client.Bucket(c.BucketName)
 		_, err := bucket.Attrs(ctx)
 		if err == storage.ErrBucketNotExist && c.createBucket {
-			log.Info("gcs bucket does not exist, create bucket.", zap.String("bucket name", c.bucketName))
-			err = client.Bucket(c.bucketName).Create(ctx, projectId, nil)
+			log.Info("gcs bucket does not exist, create bucket.", zap.String("bucket name", c.BucketName))
+			err = client.Bucket(c.BucketName).Create(ctx, projectId, nil)
 			if err != nil {
 				return err
 			}

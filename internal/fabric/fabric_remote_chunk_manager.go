@@ -1,4 +1,4 @@
-package storage
+package fabric
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"github.com/aliyun/credentials-go/credentials/utils"
 	"github.com/cockroachdb/errors"
 	"github.com/milvus-io/milvus/internal/accessmanager"
+	"github.com/milvus-io/milvus/internal/storage"
 	"github.com/milvus-io/milvus/pkg/log"
 	"github.com/milvus-io/milvus/pkg/util/merr"
 	"github.com/milvus-io/milvus/pkg/util/paramtable"
@@ -18,15 +19,15 @@ import (
 )
 
 type TransientFabricRemoteChunkManager struct {
-	chunkManager        *RemoteChunkManager
+	chunkManager        *storage.RemoteChunkManager
 	expirationTimestamp string
 }
 
 type FabricRemoteChunkManager struct {
-	*RemoteChunkManager
+	*storage.RemoteChunkManager
 	globalTransientRemoteChunkManager *TransientFabricRemoteChunkManager
 	chunkManagers                     map[int64]*TransientFabricRemoteChunkManager
-	config                            *config
+	config                            *storage.Config
 	chunkManagerMutex                 sync.Mutex
 }
 
@@ -37,7 +38,7 @@ var (
 
 var params *paramtable.ComponentParam = paramtable.Get()
 
-func NewFabricRemoteChunkManager(ctx context.Context, c *config) (*FabricRemoteChunkManager, error) {
+func NewFabricRemoteChunkManager(ctx context.Context, c *storage.Config) (*FabricRemoteChunkManager, error) {
 	if fabricRemoteChunkManager == nil {
 		log.Debug("Thread waiting to get the NewFabricRemoteChunkManager lock")
 		fabricRemoteChunkManagerMutex.Lock()
@@ -86,15 +87,6 @@ func (mcm *FabricRemoteChunkManager) Exist(ctx context.Context, filePath string)
 		return false, err
 	}
 	return rcm.Exist(ctx, filePath)
-}
-
-func (mcm *FabricRemoteChunkManager) ReadWithPrefix(ctx context.Context, prefix string) ([]string, [][]byte, error) {
-	log.Debug("ReadWithPrefix function called for prefix ", zap.String("prefix", prefix))
-	rcm, err := mcm.getChunkManager(ctx, prefix)
-	if err != nil {
-		return nil, nil, err
-	}
-	return rcm.ReadWithPrefix(ctx, prefix)
 }
 
 func (mcm *FabricRemoteChunkManager) ReadAt(ctx context.Context, filePath string, off int64, length int64) (p []byte, err error) {
@@ -232,14 +224,14 @@ func (mcm *FabricRemoteChunkManager) retrieveCollectionIDFromFilepath(filePath s
 	return collId, err
 }
 
-func upsertGlobalChunkManager(ctx context.Context, c *config) (*TransientFabricRemoteChunkManager, error) {
+func upsertGlobalChunkManager(ctx context.Context, c *storage.Config) (*TransientFabricRemoteChunkManager, error) {
 
 	log.Debug("Initializing global chunk manager")
 
 	//TODO add retries
 	accessCredentials, err := accessmanager.GetGlobalCredentials(
 		ctx,
-		c.bucketName,
+		c.BucketName,
 	)
 
 	if err != nil {
@@ -249,11 +241,11 @@ func upsertGlobalChunkManager(ctx context.Context, c *config) (*TransientFabricR
 	// cloned the config to be used for this new chunk manager object
 	newConfig := c.Clone()
 
-	newConfig.accessKeyID = accessCredentials.AccessKeyID
-	newConfig.secretAccessKeyID = accessCredentials.SecretAccessKey
-	newConfig.sessionToken = accessCredentials.SessionToken
+	newConfig.AccessKeyID = accessCredentials.AccessKeyID
+	newConfig.SecretAccessKeyID = accessCredentials.SecretAccessKey
+	newConfig.SessionToken = accessCredentials.SessionToken
 
-	remoteChunkManager, _ := NewRemoteChunkManager(ctx, newConfig)
+	remoteChunkManager, _ := storage.NewRemoteChunkManager(ctx, newConfig)
 
 	transientChunkManager := &TransientFabricRemoteChunkManager{
 		remoteChunkManager,
@@ -281,7 +273,7 @@ func (mcm *FabricRemoteChunkManager) getGlobalChunkManager(ctx context.Context) 
 	return mcm.globalTransientRemoteChunkManager, nil
 }
 
-func (mcm *FabricRemoteChunkManager) getChunkManager(ctx context.Context, filePath string) (*RemoteChunkManager, error) {
+func (mcm *FabricRemoteChunkManager) getChunkManager(ctx context.Context, filePath string) (*storage.RemoteChunkManager, error) {
 	collID, err := mcm.retrieveCollectionIDFromFilepath(filePath)
 	if err != nil {
 		return nil, err
@@ -381,7 +373,7 @@ func (mcm *FabricRemoteChunkManager) getNewChunkManager(ctx context.Context, col
 		ctx,
 		"",
 		fmt.Sprintf("%d", collID),
-		mcm.config.bucketName,
+		mcm.config.BucketName,
 		false,
 	)
 
@@ -392,12 +384,12 @@ func (mcm *FabricRemoteChunkManager) getNewChunkManager(ctx context.Context, col
 	// cloned the config to be used for this new chunk manager object
 	newConfig := mcm.config.Clone()
 
-	newConfig.accessKeyID = accessCredentials.AccessKeyID
-	newConfig.secretAccessKeyID = accessCredentials.SecretAccessKey
-	newConfig.sessionToken = accessCredentials.SessionToken
-	newConfig.sseKms = accessCredentials.TenantKeyId
+	newConfig.AccessKeyID = accessCredentials.AccessKeyID
+	newConfig.SecretAccessKeyID = accessCredentials.SecretAccessKey
+	newConfig.SessionToken = accessCredentials.SessionToken
+	newConfig.SseKms = accessCredentials.TenantKeyId
 
-	remoteChunkManager, err := NewRemoteChunkManager(ctx, newConfig)
+	remoteChunkManager, err := storage.NewRemoteChunkManager(ctx, newConfig)
 
 	transientChunkManager := &TransientFabricRemoteChunkManager{
 		remoteChunkManager,

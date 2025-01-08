@@ -2,8 +2,6 @@ module github.com/milvus-io/milvus
 
 go 1.22
 
-toolchain go1.22.0
-
 toolchain go1.22.6
 
 require (

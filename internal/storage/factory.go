@@ -9,8 +9,8 @@ import (
 )
 
 type ChunkManagerFactory struct {
-	persistentStorage string
-	config            *config
+	PersistentStorage string
+	Config            *Config
 }
 
 func NewChunkManagerFactoryWithParam(params *paramtable.ComponentParam) *ChunkManagerFactory {
@@ -36,29 +36,29 @@ func NewChunkManagerFactoryWithParam(params *paramtable.ComponentParam) *ChunkMa
 }
 
 func NewChunkManagerFactory(persistentStorage string, opts ...Option) *ChunkManagerFactory {
-	c := newDefaultConfig()
+	c := NewDefaultConfig()
 	for _, opt := range opts {
 		opt(c)
 	}
 	return &ChunkManagerFactory{
-		persistentStorage: persistentStorage,
-		config:            c,
+		PersistentStorage: persistentStorage,
+		Config:            c,
 	}
 }
 
 func (f *ChunkManagerFactory) newChunkManager(ctx context.Context, engine string) (ChunkManager, error) {
 	switch engine {
 	case "local":
-		return NewLocalChunkManager(RootPath(f.config.rootPath)), nil
+		return NewLocalChunkManager(RootPath(f.Config.rootPath)), nil
 	case "remote", "minio", "opendal":
-		return NewRemoteChunkManager(ctx, f.config)
+		return NewRemoteChunkManager(ctx, f.Config)
 	default:
 		return nil, errors.New("no chunk manager implemented with engine: " + engine)
 	}
 }
 
 func (f *ChunkManagerFactory) NewPersistentStorageChunkManager(ctx context.Context) (ChunkManager, error) {
-	return f.newChunkManager(ctx, f.persistentStorage)
+	return f.newChunkManager(ctx, f.PersistentStorage)
 }
 
 type Factory interface {

@@ -19,6 +19,7 @@ package datacoord
 import (
 	"context"
 	"fmt"
+	"github.com/milvus-io/milvus/internal/fabric"
 	"math/rand"
 	"os"
 	"sync"
@@ -535,7 +536,7 @@ func (s *Server) newChunkManagerFactory() (storage.ChunkManager, error) {
 
 	if Params.CommonCfg.ByokEnabled.GetAsBool() {
 		log.Info("BYOK is enabled initialising with fabric factory")
-		chunkManagerFactory := storage.NewFabricChunkManagerFactoryWithParam(Params)
+		chunkManagerFactory := fabric.NewFabricChunkManagerFactoryWithParam(Params)
 		cli, err = chunkManagerFactory.NewPersistentStorageChunkManager(s.ctx)
 	} else {
 		chunkManagerFactory := storage.NewChunkManagerFactoryWithParam(Params)

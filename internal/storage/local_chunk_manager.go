@@ -42,7 +42,7 @@ var _ ChunkManager = (*LocalChunkManager)(nil)
 
 // NewLocalChunkManager create a new local manager object.
 func NewLocalChunkManager(opts ...Option) *LocalChunkManager {
-	c := newDefaultConfig()
+	c := NewDefaultConfig()
 	for _, opt := range opts {
 		opt(c)
 	}

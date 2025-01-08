@@ -55,8 +55,8 @@ func newRemoteChunkManager(ctx context.Context, cloudProvider string, bucketName
 
 func TestInitRemoteChunkManager(t *testing.T) {
 	ctx := context.Background()
-	client, err := NewRemoteChunkManager(ctx, &config{
-		bucketName:    Params.MinioCfg.BucketName.GetValue(),
+	client, err := NewRemoteChunkManager(ctx, &Config{
+		BucketName:    Params.MinioCfg.BucketName.GetValue(),
 		createBucket:  true,
 		useIAM:        false,
 		cloudProvider: "azure",

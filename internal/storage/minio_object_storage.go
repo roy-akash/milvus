@@ -44,7 +44,7 @@ type MinioObjectStorage struct {
 	*minio.Client
 }
 
-func newMinioClient(ctx context.Context, c *config) (*minio.Client, error) {
+func newMinioClient(ctx context.Context, c *Config) (*minio.Client, error) {
 	var creds *credentials.Credentials
 	newMinioFn := minio.New
 	bucketLookupType := minio.BucketLookupAuto
@@ -61,18 +61,18 @@ func newMinioClient(ctx context.Context, c *config) (*minio.Client, error) {
 		if c.useIAM {
 			newMinioFn = aliyun.NewMinioClient
 		} else {
-			creds = credentials.NewStaticV4(c.accessKeyID, c.secretAccessKeyID, "")
+			creds = credentials.NewStaticV4(c.AccessKeyID, c.SecretAccessKeyID, "")
 		}
 	case CloudProviderGCP:
 		newMinioFn = gcp.NewMinioClient
 		if !c.useIAM {
-			creds = credentials.NewStaticV2(c.accessKeyID, c.secretAccessKeyID, "")
+			creds = credentials.NewStaticV2(c.AccessKeyID, c.SecretAccessKeyID, "")
 		}
 	case CloudProviderTencent:
 		bucketLookupType = minio.BucketLookupDNS
 		newMinioFn = tencent.NewMinioClient
 		if !c.useIAM {
-			creds = credentials.NewStaticV4(c.accessKeyID, c.secretAccessKeyID, "")
+			creds = credentials.NewStaticV4(c.AccessKeyID, c.SecretAccessKeyID, "")
 		}
 
 	default: // aws, minio
@@ -87,7 +87,7 @@ func newMinioClient(ctx context.Context, c *config) (*minio.Client, error) {
 		case strings.Contains(c.address, gcp.GcsDefaultAddress):
 			newMinioFn = gcp.NewMinioClient
 			if !c.useIAM {
-				creds = credentials.NewStaticV2(c.accessKeyID, c.secretAccessKeyID, "")
+				creds = credentials.NewStaticV2(c.AccessKeyID, c.SecretAccessKeyID, "")
 			}
 		case strings.Contains(c.address, aliyun.OSSAddressFeatureString):
 			// auto doesn't work for aliyun, so we set to dns deliberately
@@ -95,7 +95,7 @@ func newMinioClient(ctx context.Context, c *config) (*minio.Client, error) {
 			if c.useIAM {
 				newMinioFn = aliyun.NewMinioClient
 			} else {
-				creds = credentials.NewStaticV4(c.accessKeyID, c.secretAccessKeyID, "")
+				creds = credentials.NewStaticV4(c.AccessKeyID, c.SecretAccessKeyID, "")
 			}
 		default:
 			matchedDefault = true
@@ -107,7 +107,7 @@ func newMinioClient(ctx context.Context, c *config) (*minio.Client, error) {
 		if c.useIAM {
 			creds = credentials.NewIAM("")
 		} else {
-			creds = credentials.NewStaticV4(c.accessKeyID, c.secretAccessKeyID, c.sessionToken)
+			creds = credentials.NewStaticV4(c.AccessKeyID, c.SecretAccessKeyID, c.SessionToken)
 		}
 	}
 
@@ -135,26 +135,26 @@ func newMinioClient(ctx context.Context, c *config) (*minio.Client, error) {
 	var bucketExists bool
 	// check valid in first query
 	checkBucketFn := func() error {
-		bucketExists, err = minIOClient.BucketExists(ctx, c.bucketName)
+		bucketExists, err = minIOClient.BucketExists(ctx, c.BucketName)
 		if err != nil {
-			log.Warn("failed to check blob bucket exist", zap.String("bucket", c.bucketName), zap.Error(err))
+			log.Warn("failed to check blob bucket exist", zap.String("bucket", c.BucketName), zap.Error(err))
 			return err
 		}
 		if !bucketExists {
 			if c.createBucket {
-				log.Info("blob bucket not exist, create bucket.", zap.String("bucket name", c.bucketName))
-				err := minIOClient.MakeBucket(ctx, c.bucketName, minio.MakeBucketOptions{})
+				log.Info("blob bucket not exist, create bucket.", zap.String("bucket name", c.BucketName))
+				err := minIOClient.MakeBucket(ctx, c.BucketName, minio.MakeBucketOptions{})
 				if err != nil {
-					log.Warn("failed to create blob bucket", zap.String("bucket", c.bucketName), zap.Error(err))
+					log.Warn("failed to create blob bucket", zap.String("bucket", c.BucketName), zap.Error(err))
 					return err
 				}
 			} else {
-				return fmt.Errorf("bucket %s not Existed", c.bucketName)
+				return fmt.Errorf("bucket %s not Existed", c.BucketName)
 			}
 		}
 		return nil
 	}
-	if !params.CommonCfg.ByokEnabled.GetAsBool() {
+	if !paramtable.Get().CommonCfg.ByokEnabled.GetAsBool() {
 		err = retry.Do(ctx, checkBucketFn, retry.Attempts(CheckBucketRetryAttempts))
 		if err != nil {
 			log.Warn("Error occurred while bucket existence check")
@@ -164,7 +164,7 @@ func newMinioClient(ctx context.Context, c *config) (*minio.Client, error) {
 	return minIOClient, nil
 }
 
-func newMinioObjectStorageWithConfig(ctx context.Context, c *config) (*MinioObjectStorage, error) {
+func newMinioObjectStorageWithConfig(ctx context.Context, c *Config) (*MinioObjectStorage, error) {
 	minIOClient, err := newMinioClient(ctx, c)
 	if err != nil {
 		return nil, err
