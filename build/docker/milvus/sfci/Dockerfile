@@ -4,7 +4,7 @@ LABEL maintainer=cdpfabric@salesforce.com
 
 ARG TARGETARCH
 
-RUN dnf install -y wget libgomp libaio libatomic ca-certificates && \
+RUN dnf install -y wget libgomp libaio libatomic ca-certificates openblas-devel libaio-devel && \
     dnf -y clean all && \
     rm -rf /var/cache/dnf/*
 
