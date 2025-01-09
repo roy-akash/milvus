@@ -8,6 +8,8 @@ RUN dnf install -y wget libgomp libaio libatomic ca-certificates && \
     dnf -y clean all && \
     rm -rf /var/cache/dnf/*
 
+RUN yum install atlas-devel -y
+
 COPY --chown=root:root --chmod=774 ./bin/ /milvus/bin/
 
 COPY --chown=root:root --chmod=774 ./configs/ /milvus/configs/
