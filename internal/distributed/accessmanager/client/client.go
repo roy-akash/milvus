@@ -8,8 +8,8 @@ import (
 	"google.golang.org/grpc"
 	"os"
 
-	"github.com/milvus-io/milvus/internal/proto/dpccvspb"
 	"github.com/milvus-io/milvus/internal/types"
+	"github.com/milvus-io/milvus/pkg/proto/dpccvspb"
 	"github.com/milvus-io/milvus/pkg/util/typeutil"
 
 	"github.com/milvus-io/milvus/pkg/util/paramtable"

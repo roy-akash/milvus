@@ -3,9 +3,9 @@ package accessmanager
 import (
 	"context"
 	grpcaccessmanagerclient "github.com/milvus-io/milvus/internal/distributed/accessmanager/client"
-	dpccvdpb "github.com/milvus-io/milvus/internal/proto/dpccvspb"
 	"github.com/milvus-io/milvus/internal/types"
 	"github.com/milvus-io/milvus/pkg/log"
+	dpccvdpb "github.com/milvus-io/milvus/pkg/proto/dpccvspb"
 	"go.uber.org/zap"
 	"os"
 	"sync"

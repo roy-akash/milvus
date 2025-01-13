@@ -18,7 +18,7 @@ package types
 
 import (
 	"context"
-	"github.com/milvus-io/milvus/internal/proto/dpccvspb"
+	"github.com/milvus-io/milvus/pkg/proto/dpccvspb"
 
 	"io"
 
