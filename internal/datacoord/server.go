@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/milvus-io/milvus/internal/fabric"
+	streamingcoord "github.com/milvus-io/milvus/internal/streamingcoord/server"
 	"math/rand"
 	"os"
 	"sync"
@@ -211,17 +212,17 @@ func WithSegmentManager(manager Manager) Option {
 func CreateServer(ctx context.Context, factory dependency.Factory, opts ...Option) *Server {
 	rand.Seed(time.Now().UnixNano())
 	s := &Server{
-		ctx:                    ctx,
-		quitCh:                 make(chan struct{}),
-		factory:                factory,
-		flushCh:                make(chan UniqueID, 1024),
-		notifyIndexChan:        make(chan UniqueID, 1024),
-		dataNodeCreator:        defaultDataNodeCreatorFunc,
-		indexNodeCreator:       defaultIndexNodeCreatorFunc,
-		rootCoordClientCreator: defaultRootCoordCreatorFunc,
-		metricsCacheManager:    metricsinfo.NewMetricsCacheManager(),
-		enableActiveStandBy:    Params.DataCoordCfg.EnableActiveStandby.GetAsBool(),
-		metricsRequest:         metricsinfo.NewMetricsRequest(),
+		ctx:                           ctx,
+		quitCh:                        make(chan struct{}),
+		factory:                       factory,
+		flushCh:                       make(chan UniqueID, 1024),
+		notifyIndexChan:               make(chan UniqueID, 1024),
+		dataNodeCreator:               defaultDataNodeCreatorFunc,
+		indexNodeCreator:              defaultIndexNodeCreatorFunc,
+		rootCoordClientCreator:        defaultRootCoordCreatorFunc,
+		metricsCacheManager:           metricsinfo.NewMetricsCacheManager(),
+		enableActiveStandBy:           Params.DataCoordCfg.EnableActiveStandby.GetAsBool(),
+		metricsRequest:                metricsinfo.NewMetricsRequest(),
 		useCollectionIdBasedIndexPath: Params.CommonCfg.UseCollectionIdBasedIndexPath.GetAsBool(),
 	}
 
@@ -552,13 +553,13 @@ func (s *Server) newChunkManagerFactory() (storage.ChunkManager, error) {
 
 func (s *Server) initGarbageCollection(cli storage.ChunkManager) {
 	s.garbageCollector = newGarbageCollector(s.meta, s.handler, GcOption{
-		cli:              cli,
-		broker:           s.broker,
-		enabled:          Params.DataCoordCfg.EnableGarbageCollection.GetAsBool(),
-		checkInterval:    Params.DataCoordCfg.GCInterval.GetAsDuration(time.Second),
-		scanInterval:     Params.DataCoordCfg.GCScanIntervalInHour.GetAsDuration(time.Hour),
-		missingTolerance: Params.DataCoordCfg.GCMissingTolerance.GetAsDuration(time.Second),
-		dropTolerance:    Params.DataCoordCfg.GCDropTolerance.GetAsDuration(time.Second),
+		cli:                           cli,
+		broker:                        s.broker,
+		enabled:                       Params.DataCoordCfg.EnableGarbageCollection.GetAsBool(),
+		checkInterval:                 Params.DataCoordCfg.GCInterval.GetAsDuration(time.Second),
+		scanInterval:                  Params.DataCoordCfg.GCScanIntervalInHour.GetAsDuration(time.Hour),
+		missingTolerance:              Params.DataCoordCfg.GCMissingTolerance.GetAsDuration(time.Second),
+		dropTolerance:                 Params.DataCoordCfg.GCDropTolerance.GetAsDuration(time.Second),
 		useCollectionIdBasedIndexPath: Params.CommonCfg.UseCollectionIdBasedIndexPath.GetAsBool(),
 	})
 }
