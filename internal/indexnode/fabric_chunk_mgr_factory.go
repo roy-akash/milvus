@@ -3,9 +3,9 @@ package indexnode
 import (
 	"context"
 	"github.com/milvus-io/milvus/internal/fabric"
-	"github.com/milvus-io/milvus/internal/proto/indexpb"
 	"github.com/milvus-io/milvus/internal/storage"
 	"github.com/milvus-io/milvus/pkg/log"
+	"github.com/milvus-io/milvus/pkg/proto/indexpb"
 )
 
 type FabricChunkMgrFactory struct {
