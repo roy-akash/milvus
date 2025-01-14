@@ -200,6 +200,9 @@ func (cit *createIndexTask) parseIndexParams(ctx context.Context) error {
 		checker, err := indexparamcheck.GetIndexCheckerMgrInstance().GetChecker(specifyIndexType)
 		// not enable hybrid index for user, used in milvus internally
 		if err != nil || indexparamcheck.IsHYBRIDChecker(checker) {
+			if err != nil {
+				log.Ctx(ctx).Error("error occurred while getting checked", zap.String(common.IndexTypeKey, specifyIndexType), zap.Error(err))
+			}
 			log.Ctx(ctx).Warn("Failed to get index checker", zap.String(common.IndexTypeKey, specifyIndexType))
 			return merr.WrapErrParameterInvalid("valid index", fmt.Sprintf("invalid index type: %s", specifyIndexType))
 		}
